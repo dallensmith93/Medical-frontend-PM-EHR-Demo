@@ -4,6 +4,9 @@ dist/
 
 coverage/
 .netlify/
+.vs/
+bin/
+obj/
 
 .DS_Store
 Thumbs.db
