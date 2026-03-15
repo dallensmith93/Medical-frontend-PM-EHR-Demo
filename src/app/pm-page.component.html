@@ -1,0 +1,256 @@
+<header class="topbar">
+  <div class="header-copy">
+    <p class="eyebrow">Practice Management</p>
+    <h2>PM Workspace</h2>
+  </div>
+
+  <div class="topbar-actions">
+    <div class="search-pill">Search patient, appointment, claim</div>
+    <a class="primary-action action-link" routerLink="/pm/schedule">Schedule Appointment</a>
+  </div>
+</header>
+
+<section class="hero-grid">
+  <article class="metric-card" *ngFor="let metric of metrics">
+    <p>{{ metric.label }}</p>
+    <strong>{{ metric.value }}</strong>
+    <span>{{ metric.delta }}</span>
+  </article>
+</section>
+
+<nav class="subnav tight-subnav">
+  <a routerLink="/pm/schedule" routerLinkActive="is-active">Schedule</a>
+  <a routerLink="/pm/claims" routerLinkActive="is-active">Create Claims</a>
+  <a routerLink="/pm/master-files" routerLinkActive="is-active">Master Settings</a>
+  <a routerLink="/pm/user-settings" routerLinkActive="is-active">User Settings</a>
+  <a routerLink="/pm/reports" routerLinkActive="is-active">Reports</a>
+</nav>
+
+<ng-container [ngSwitch]="currentSection">
+  <div class="workspace-grid" *ngSwitchCase="'schedule'">
+    <section class="panel glass">
+      <div class="panel-header">
+        <div>
+          <p class="section-kicker">Appointment Desk</p>
+          <h3>Today&apos;s schedule</h3>
+        </div>
+        <button type="button" class="ghost-action">Export day sheet</button>
+      </div>
+
+      <div class="schedule-list">
+        <div class="schedule-item" *ngFor="let slot of schedule">
+          <div class="time-block">
+            <strong>{{ slot.time }}</strong>
+            <span>{{ slot.lane }}</span>
+          </div>
+          <div class="schedule-meta">
+            <h4>{{ slot.patient }}</h4>
+            <p>{{ slot.type }} with {{ slot.provider }}</p>
+          </div>
+          <span class="status-badge">{{ slot.type }}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="section-kicker">Patient Queue</p>
+          <h3>Check-in and ledger queue</h3>
+        </div>
+        <button type="button" class="ghost-action">Run eligibility</button>
+      </div>
+
+      <div class="patient-table">
+        <button
+          class="patient-row"
+          *ngFor="let patient of patients"
+          type="button"
+          [class.is-selected]="activePatient.id === patient.id"
+          (click)="selectPatient(patient)"
+        >
+          <div>
+            <strong>{{ patient.name }}</strong>
+            <span>{{ patient.id }} | {{ patient.payer }}</span>
+          </div>
+          <div>
+            <strong>{{ patient.balance }}</strong>
+            <span>{{ patient.status }}</span>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <section class="panel detail-panel">
+      <div class="panel-header">
+        <div>
+          <p class="section-kicker">Appointment Detail</p>
+          <h3>{{ activePatient.name }}</h3>
+        </div>
+        <span class="risk-pill" [ngClass]="'risk-' + activePatient.risk.toLowerCase()">
+          {{ activePatient.risk }} risk
+        </span>
+      </div>
+
+      <div class="detail-grid">
+        <div class="stat-card">
+          <span>Appointment</span>
+          <strong>{{ activePatient.appointment }}</strong>
+        </div>
+        <div class="stat-card">
+          <span>Reason</span>
+          <strong>{{ activePatient.reason }}</strong>
+        </div>
+        <div class="stat-card">
+          <span>Last Visit</span>
+          <strong>{{ activePatient.lastVisit }}</strong>
+        </div>
+        <div class="stat-card">
+          <span>Room</span>
+          <strong>{{ activePatient.room }}</strong>
+        </div>
+      </div>
+
+      <div class="task-strip">
+        <button type="button">Collect copay</button>
+        <button type="button">Verify insurance</button>
+        <button type="button">Send intake packet</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="content-grid" *ngSwitchCase="'claims'">
+    <section class="panel glass">
+      <div class="panel-header">
+        <div>
+          <p class="section-kicker">Claim Builder</p>
+          <h3>Create and review claims</h3>
+        </div>
+        <button type="button" class="primary-action">Generate Batch</button>
+      </div>
+      <div class="claim-list">
+        <article class="list-card" *ngFor="let claim of claimQueue">
+          <div>
+            <strong>{{ claim.claim }}</strong>
+            <p>{{ claim.patient }} | {{ claim.payer }}</p>
+          </div>
+          <div class="list-card-meta">
+            <strong>{{ claim.amount }}</strong>
+            <span class="status-badge">{{ claim.status }}</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="section-kicker">Claim Actions</p>
+          <h3>Submission workflow</h3>
+        </div>
+      </div>
+      <div class="action-stack">
+        <button type="button" class="primary-action">Create Primary Claim</button>
+        <button type="button" class="ghost-action">Scrub Coding Issues</button>
+        <button type="button" class="ghost-action">Attach Documentation</button>
+        <button type="button" class="ghost-action">Submit to Clearinghouse</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="content-grid" *ngSwitchCase="'master-files'">
+    <section class="panel glass">
+      <div class="panel-header">
+        <div>
+          <p class="section-kicker">Master Settings</p>
+          <h3>System setup records</h3>
+        </div>
+      </div>
+      <div class="list-grid">
+        <article class="list-card" *ngFor="let item of masterFiles">
+          <strong>{{ item.name }}</strong>
+          <p>{{ item.detail }}</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="section-kicker">Maintenance</p>
+          <h3>Common admin actions</h3>
+        </div>
+      </div>
+      <div class="action-stack">
+        <button type="button" class="ghost-action">Add provider</button>
+        <button type="button" class="ghost-action">Update fee schedule</button>
+        <button type="button" class="ghost-action">Edit payer rules</button>
+        <button type="button" class="ghost-action">Review location settings</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="content-grid" *ngSwitchCase="'user-settings'">
+    <section class="panel glass">
+      <div class="panel-header">
+        <div>
+          <p class="section-kicker">User Settings</p>
+          <h3>Personal workspace controls</h3>
+        </div>
+      </div>
+      <div class="list-grid">
+        <article class="list-card" *ngFor="let item of userSettings">
+          <strong>{{ item.name }}</strong>
+          <p>{{ item.detail }}</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="section-kicker">Preferences</p>
+          <h3>Common user actions</h3>
+        </div>
+      </div>
+      <div class="action-stack">
+        <button type="button" class="ghost-action">Update password</button>
+        <button type="button" class="ghost-action">Change landing page</button>
+        <button type="button" class="ghost-action">Manage notification rules</button>
+        <button type="button" class="ghost-action">Edit saved filters</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="content-grid" *ngSwitchCase="'reports'">
+    <section class="panel glass">
+      <div class="panel-header">
+        <div>
+          <p class="section-kicker">Reports Center</p>
+          <h3>Operational and financial reporting</h3>
+        </div>
+      </div>
+      <div class="list-grid">
+        <article class="list-card" *ngFor="let report of reports">
+          <strong>{{ report.name }}</strong>
+          <p>{{ report.detail }}</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="section-kicker">Run Report</p>
+          <h3>Quick launch</h3>
+        </div>
+      </div>
+      <div class="action-stack">
+        <button type="button" class="primary-action">Daily Collections</button>
+        <button type="button" class="ghost-action">A/R Aging by payer</button>
+        <button type="button" class="ghost-action">Utilization by provider</button>
+        <button type="button" class="ghost-action">Productivity summary</button>
+      </div>
+    </section>
+  </div>
+</ng-container>

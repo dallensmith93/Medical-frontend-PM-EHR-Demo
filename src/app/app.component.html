@@ -1,0 +1,41 @@
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand-block">
+      <div class="brand-mark">A</div>
+      <div>
+        <p class="eyebrow">Medical Frontend</p>
+        <h1>PM / EHR Demo</h1>
+      </div>
+    </div>
+
+    <div class="workspace-switcher">
+      <a routerLink="/pm/schedule" routerLinkActive="is-active">Practice Management</a>
+      <a routerLink="/ehr" routerLinkActive="is-active">EHR Workspace</a>
+    </div>
+
+    <nav class="side-nav">
+      <a routerLink="/pm/schedule" routerLinkActive="is-active">Appointments</a>
+      <a routerLink="/pm/claims" routerLinkActive="is-active">Claims</a>
+      <a routerLink="/pm/master-files" routerLinkActive="is-active">Master Settings</a>
+      <a routerLink="/pm/user-settings" routerLinkActive="is-active">User Settings</a>
+      <a routerLink="/pm/reports" routerLinkActive="is-active">Reports</a>
+      <a routerLink="/ehr" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="is-active">EHR Home</a>
+      <a routerLink="/ehr/encounter" routerLinkActive="is-active">Open Encounter</a>
+    </nav>
+
+    <section class="sidebar-card">
+      <p class="section-kicker">System Alerts</p>
+      <ul class="alert-list">
+        <li *ngFor="let alert of alerts">{{ alert }}</li>
+      </ul>
+    </section>
+  </aside>
+
+  <main class="main-panel">
+    <div class="workspace-banner">
+      <span class="section-kicker">Workspace</span>
+      <strong>{{ workspaceLabel }}</strong>
+    </div>
+    <router-outlet></router-outlet>
+  </main>
+</div>

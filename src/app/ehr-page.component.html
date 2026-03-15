@@ -1,0 +1,150 @@
+<header class="topbar">
+  <div class="header-copy">
+    <p class="eyebrow">EHR Workspace</p>
+    <h2>EHR Workspace</h2>
+  </div>
+
+  <div class="topbar-actions">
+    <div class="search-pill">Search chart, patient, order</div>
+    <a class="primary-action action-link" [routerLink]="['/ehr/encounter']">Open Encounter</a>
+  </div>
+</header>
+
+<section class="hero-grid">
+  <article class="metric-card" *ngFor="let metric of metrics">
+    <p>{{ metric.label }}</p>
+    <strong>{{ metric.value }}</strong>
+    <span>{{ metric.delta }}</span>
+  </article>
+</section>
+
+<nav class="subnav tight-subnav">
+  <a routerLink="/ehr" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="is-active">EHR Home</a>
+  <a routerLink="/ehr/encounter" routerLinkActive="is-active">Open Encounter</a>
+</nav>
+
+<ng-container *ngIf="!encounterOpen; else encounterView">
+  <div class="content-grid">
+    <section class="panel glass">
+      <div class="panel-header">
+        <div>
+          <p class="section-kicker">Patient List</p>
+          <h3>Ready for provider</h3>
+        </div>
+      </div>
+      <div class="patient-table">
+        <button
+          class="patient-row"
+          *ngFor="let patient of patients"
+          type="button"
+          (click)="selectPatient(patient.id)"
+          [class.is-selected]="activePatient.id === patient.id"
+        >
+          <div>
+            <strong>{{ patient.name }}</strong>
+            <span>{{ patient.reason }}</span>
+          </div>
+          <div>
+            <strong>{{ patient.room }}</strong>
+            <span>{{ patient.status }}</span>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="section-kicker">Encounter Launcher</p>
+          <h3>{{ activePatient.name }}</h3>
+        </div>
+        <span class="risk-pill" [ngClass]="'risk-' + activePatient.risk.toLowerCase()">
+          {{ activePatient.risk }} risk
+        </span>
+      </div>
+      <div class="detail-grid">
+        <div class="stat-card">
+          <span>Appointment</span>
+          <strong>{{ activePatient.appointment }}</strong>
+        </div>
+        <div class="stat-card">
+          <span>Payer</span>
+          <strong>{{ activePatient.payer }}</strong>
+        </div>
+        <div class="stat-card">
+          <span>Last Visit</span>
+          <strong>{{ activePatient.lastVisit }}</strong>
+        </div>
+        <div class="stat-card">
+          <span>Balance</span>
+          <strong>{{ activePatient.balance }}</strong>
+        </div>
+      </div>
+      <div class="action-stack">
+        <a class="primary-action action-link" [routerLink]="['/ehr/encounter']">Launch Encounter</a>
+        <button type="button" class="ghost-action">Review meds</button>
+        <button type="button" class="ghost-action">Open labs</button>
+      </div>
+    </section>
+  </div>
+</ng-container>
+
+<ng-template #encounterView>
+  <div class="workspace-grid ehr-grid">
+    <section class="panel glass chart-header">
+      <div class="chart-summary">
+        <p class="section-kicker">Open Encounter</p>
+        <h3>{{ activePatient.name }}, {{ activePatient.age }}</h3>
+        <p>{{ activePatient.reason }} | {{ activePatient.payer }} | Balance {{ activePatient.balance }}</p>
+      </div>
+
+      <div class="chart-actions">
+        <button type="button" class="ghost-action">Reconcile meds</button>
+        <button type="button" class="primary-action">Sign note</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="tab-row">
+        <button
+          *ngFor="let tab of chartTabs"
+          type="button"
+          [class.is-active]="activeChartTab === tab"
+          (click)="selectChartTab(tab)"
+        >
+          {{ tab }}
+        </button>
+      </div>
+
+      <div class="timeline">
+        <article class="timeline-item" *ngFor="let item of timeline">
+          <span class="timeline-dot"></span>
+          <div>
+            <h4>{{ item.label }}</h4>
+            <p>{{ item.detail }}</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="section-kicker">Clinical Tools</p>
+          <h3>Orders and documentation</h3>
+        </div>
+      </div>
+
+      <div class="composer">
+        <label>
+          Assessment
+          <textarea>Type 2 diabetes without complications. Blood pressure slightly above goal in clinic; home readings stable.</textarea>
+        </label>
+        <label>
+          Plan
+          <textarea>Continue metformin 1000 mg BID. Order CMP and microalbumin. Follow up in 3 months.</textarea>
+        </label>
+      </div>
+    </section>
+  </div>
+</ng-template>
