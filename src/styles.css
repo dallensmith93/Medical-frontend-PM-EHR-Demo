@@ -1,10 +1,6 @@
 :root {
   font-family: "Barlow", sans-serif;
   color: #0f1722;
-  background:
-    radial-gradient(circle at top left, rgba(44, 122, 123, 0.26), transparent 26%),
-    radial-gradient(circle at top right, rgba(235, 161, 82, 0.22), transparent 20%),
-    linear-gradient(180deg, #f8f1e7 0%, #eef3f1 46%, #e7eeec 100%);
   line-height: 1.5;
   font-weight: 400;
   color-scheme: light;
@@ -32,6 +28,10 @@
   --space-5: 1.5rem;
   --space-6: 1.75rem;
   --space-7: 2.25rem;
+  --app-background:
+    radial-gradient(circle at top left, rgba(44, 122, 123, 0.12), transparent 24%),
+    radial-gradient(circle at top right, rgba(235, 161, 82, 0.1), transparent 18%),
+    linear-gradient(180deg, #ffffff 0%, #f9fbfc 52%, #f4f7f8 100%);
 }
 
 * {
@@ -43,6 +43,8 @@ body {
   min-width: 320px;
   min-height: 100vh;
   color: var(--ink);
+  background: var(--app-background);
+  transition: background 220ms ease, color 220ms ease;
 }
 
 html,
@@ -74,6 +76,9 @@ app-root {
   grid-template-columns: 288px 1fr;
   gap: var(--space-5);
   padding: var(--space-5);
+  color: var(--ink);
+  background: var(--app-background);
+  transition: background 220ms ease, color 220ms ease;
 }
 
 .sidebar {
@@ -191,9 +196,59 @@ app-root {
   display: grid;
 }
 
+.theme-toggle,
 .workspace-switcher,
 .side-nav {
   gap: 10px;
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.theme-toggle-copy {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+}
+
+.theme-toggle-copy strong {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.95rem;
+  color: #f4f8fb;
+}
+
+.theme-toggle-track {
+  width: 52px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  transition: background 160ms ease;
+}
+
+.theme-toggle-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fff6de, #ffffff);
+  box-shadow: 0 6px 18px rgba(16, 33, 44, 0.22);
+  transition: transform 160ms ease;
+}
+
+.theme-toggle-track.is-dark .theme-toggle-thumb {
+  transform: translateX(22px);
 }
 
 .workspace-switcher a,
@@ -201,17 +256,18 @@ app-root {
   text-align: left;
   padding: 12px 14px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.07);
   color: inherit;
-  transition: background 160ms ease, transform 160ms ease, border-color 160ms ease;
-  border: 1px solid transparent;
+  transition: background 160ms ease, transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .workspace-switcher .is-active,
 .side-nav .is-active,
 .side-nav a:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
   transform: translateX(3px);
 }
 
@@ -235,9 +291,9 @@ app-root {
   padding: var(--space-6);
   border-radius: 32px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(245, 248, 247, 0.86)),
-    rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.68);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(249, 251, 252, 0.98)),
+    rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(16, 33, 44, 0.08);
   box-shadow: var(--shadow);
   display: grid;
   align-content: start;
@@ -265,7 +321,7 @@ app-root {
   padding: 10px 14px;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.96);
   box-shadow: var(--shadow-soft);
   position: relative;
   z-index: 1;
@@ -303,7 +359,7 @@ app-root {
   min-width: 280px;
   padding: 12px 16px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.84);
+  background: rgba(255, 255, 255, 0.98);
   border: 1px solid var(--line);
   color: var(--muted);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
@@ -317,7 +373,7 @@ app-root {
 .action-link {
   padding: 12px 16px;
   border-radius: 14px;
-  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease, color 160ms ease;
 }
 
 .primary-action {
@@ -330,9 +386,10 @@ app-root {
 .task-strip button,
 .tab-row button,
 .subnav a {
-  background: rgba(16, 33, 44, 0.05);
+  background: rgba(255, 255, 255, 0.72);
   color: var(--ink);
-  border: 1px solid rgba(16, 33, 44, 0.06);
+  border: 1px solid rgba(16, 33, 44, 0.12);
+  box-shadow: 0 6px 18px rgba(18, 34, 45, 0.06);
 }
 
 .primary-action:hover,
@@ -345,6 +402,31 @@ app-root {
 .schedule-item:hover,
 .list-card:hover {
   transform: translateY(-2px);
+}
+
+.ghost-action:hover,
+.task-strip button:hover,
+.tab-row button:hover,
+.subnav a:hover,
+.patient-row:hover,
+.schedule-item:hover,
+.list-card:hover {
+  border-color: rgba(26, 127, 122, 0.28);
+  box-shadow: 0 14px 28px rgba(18, 34, 45, 0.1);
+}
+
+.primary-action:focus-visible,
+.ghost-action:focus-visible,
+.task-strip button:focus-visible,
+.tab-row button:focus-visible,
+.subnav a:focus-visible,
+.action-link:focus-visible,
+.workspace-switcher a:focus-visible,
+.side-nav a:focus-visible,
+.theme-toggle:focus-visible,
+.patient-row:focus-visible {
+  outline: 3px solid rgba(26, 127, 122, 0.38);
+  outline-offset: 3px;
 }
 
 .action-link {
@@ -389,6 +471,7 @@ app-root {
   margin: 10px 0 6px;
   font-family: "Space Grotesk", sans-serif;
   font-size: 2rem;
+  color: var(--ink);
 }
 
 .metric-card span,
@@ -406,6 +489,30 @@ app-root {
 .timeline-item p,
 .chart-summary p {
   margin: 0;
+}
+
+.panel,
+.metric-card,
+.stat-card,
+.list-card,
+.schedule-item,
+.patient-row,
+.workspace-banner,
+.search-pill,
+.composer textarea,
+.theme-toggle {
+  color: var(--ink);
+}
+
+.panel h3,
+.schedule-meta h4,
+.timeline-item h4,
+.list-card strong,
+.patient-row strong,
+.time-block strong,
+.stat-card strong,
+.chart-summary h3 {
+  color: var(--ink);
 }
 
 .workspace-grid {
@@ -428,7 +535,7 @@ app-root {
 }
 
 .glass {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(245, 249, 248, 0.82));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 251, 0.94));
 }
 
 .panel-header {
@@ -461,6 +568,8 @@ app-root {
 .subnav .is-active {
   background: var(--ink);
   color: white;
+  border-color: transparent;
+  box-shadow: 0 16px 30px rgba(16, 33, 44, 0.16);
 }
 
 .schedule-item,
@@ -469,8 +578,8 @@ app-root {
   gap: 14px;
   padding: 16px;
   border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(16, 33, 44, 0.06);
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(16, 33, 44, 0.1);
   box-shadow: 0 10px 24px rgba(18, 34, 45, 0.05);
 }
 
@@ -480,8 +589,8 @@ app-root {
   gap: 16px;
   padding: 16px;
   border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(16, 33, 44, 0.06);
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(16, 33, 44, 0.1);
   box-shadow: 0 10px 24px rgba(18, 34, 45, 0.05);
 }
 
@@ -667,6 +776,132 @@ app-root {
 .chart-summary {
   display: grid;
   gap: 4px;
+}
+
+.app-shell[data-theme="dark"] {
+  --ink: #edf3f7;
+  --muted: #9bb0be;
+  --line: rgba(219, 231, 238, 0.12);
+  --panel: rgba(15, 25, 35, 0.82);
+  --panel-strong: #17222d;
+  --teal: #35b6ae;
+  --teal-deep: #1d8d88;
+  --sand: #f1b56a;
+  --rose: #dd7e78;
+  --shadow: 0 28px 70px rgba(0, 0, 0, 0.34);
+  --shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.24);
+  --app-background:
+    radial-gradient(circle at top left, rgba(53, 182, 174, 0.16), transparent 24%),
+    radial-gradient(circle at top right, rgba(241, 181, 106, 0.12), transparent 18%),
+    linear-gradient(180deg, #09121a 0%, #0d1821 45%, #111c25 100%);
+  color-scheme: dark;
+}
+
+.app-shell[data-theme="dark"] .sidebar {
+  background: linear-gradient(180deg, rgba(8, 20, 29, 0.96), rgba(12, 30, 41, 0.94));
+  color: #edf3f7;
+}
+
+.app-shell[data-theme="dark"] .workspace-switcher a,
+.app-shell[data-theme="dark"] .side-nav a,
+.app-shell[data-theme="dark"] .theme-toggle,
+.app-shell[data-theme="dark"] .sidebar-card {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.app-shell[data-theme="dark"] .workspace-switcher .is-active,
+.app-shell[data-theme="dark"] .side-nav .is-active,
+.app-shell[data-theme="dark"] .side-nav a:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.app-shell[data-theme="dark"] .main-panel {
+  background:
+    linear-gradient(180deg, rgba(14, 26, 36, 0.88), rgba(10, 21, 30, 0.94)),
+    rgba(7, 15, 22, 0.78);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.app-shell[data-theme="dark"] .main-panel::before {
+  background: rgba(53, 182, 174, 0.12);
+}
+
+.app-shell[data-theme="dark"] .workspace-banner,
+.app-shell[data-theme="dark"] .search-pill,
+.app-shell[data-theme="dark"] .schedule-item,
+.app-shell[data-theme="dark"] .patient-row,
+.app-shell[data-theme="dark"] .list-card,
+.app-shell[data-theme="dark"] .composer textarea,
+.app-shell[data-theme="dark"] .theme-toggle {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--ink);
+}
+
+.app-shell[data-theme="dark"] .panel,
+.app-shell[data-theme="dark"] .metric-card,
+.app-shell[data-theme="dark"] .stat-card,
+.app-shell[data-theme="dark"] .glass {
+  background: linear-gradient(180deg, rgba(18, 31, 42, 0.94), rgba(13, 24, 34, 0.88));
+}
+
+.app-shell[data-theme="dark"] .ghost-action,
+.app-shell[data-theme="dark"] .task-strip button,
+.app-shell[data-theme="dark"] .tab-row button,
+.app-shell[data-theme="dark"] .subnav a {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--ink);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+}
+
+.app-shell[data-theme="dark"] .subnav .is-active,
+.app-shell[data-theme="dark"] .tab-row .is-active {
+  background: rgba(237, 243, 247, 0.14);
+  color: #ffffff;
+}
+
+.app-shell[data-theme="dark"] .metric-card strong,
+.app-shell[data-theme="dark"] .panel h3,
+.app-shell[data-theme="dark"] .schedule-meta h4,
+.app-shell[data-theme="dark"] .timeline-item h4,
+.app-shell[data-theme="dark"] .list-card strong,
+.app-shell[data-theme="dark"] .patient-row strong,
+.app-shell[data-theme="dark"] .time-block strong,
+.app-shell[data-theme="dark"] .stat-card strong,
+.app-shell[data-theme="dark"] .chart-summary h3,
+.app-shell[data-theme="dark"] .theme-toggle-copy strong {
+  color: #f4f8fb;
+}
+
+.app-shell[data-theme="dark"] .metric-card p,
+.app-shell[data-theme="dark"] .stat-card span,
+.app-shell[data-theme="dark"] .patient-row span,
+.app-shell[data-theme="dark"] .time-block span,
+.app-shell[data-theme="dark"] .section-kicker,
+.app-shell[data-theme="dark"] .eyebrow {
+  color: #9bb0be;
+}
+
+.app-shell[data-theme="dark"] .status-badge {
+  background: rgba(53, 182, 174, 0.18);
+  color: #9df1eb;
+}
+
+.app-shell[data-theme="dark"] .risk-low {
+  background: rgba(53, 182, 174, 0.16);
+  color: #98efe7;
+}
+
+.app-shell[data-theme="dark"] .risk-moderate {
+  background: rgba(241, 181, 106, 0.16);
+  color: #ffd79f;
+}
+
+.app-shell[data-theme="dark"] .risk-high {
+  background: rgba(221, 126, 120, 0.16);
+  color: #ffb7b2;
 }
 
 @media (max-width: 1180px) {

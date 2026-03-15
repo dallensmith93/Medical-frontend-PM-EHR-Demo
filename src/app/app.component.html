@@ -1,4 +1,4 @@
-<div class="app-shell">
+<div class="app-shell" [attr.data-theme]="theme">
   <aside class="sidebar">
     <div class="brand-block">
       <div class="brand-mark">A</div>
@@ -12,6 +12,16 @@
       <a routerLink="/pm/schedule" routerLinkActive="is-active">Practice Management</a>
       <a routerLink="/ehr" routerLinkActive="is-active">EHR Workspace</a>
     </div>
+
+    <button type="button" class="theme-toggle" (click)="toggleTheme()">
+      <span class="theme-toggle-copy">
+        <span class="section-kicker">Theme</span>
+        <strong>{{ theme === "light" ? "Light Mode" : "Dark Mode" }}</strong>
+      </span>
+      <span class="theme-toggle-track" [class.is-dark]="theme === 'dark'">
+        <span class="theme-toggle-thumb"></span>
+      </span>
+    </button>
 
     <nav class="side-nav">
       <a routerLink="/pm/schedule" routerLinkActive="is-active">Appointments</a>
