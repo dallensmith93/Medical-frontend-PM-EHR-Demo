@@ -2,7 +2,7 @@ import { TestBed } from "@angular/core/testing";
 import { of } from "rxjs";
 import { PatientFormComponent } from "./patient-form.component";
 import { PatientService } from "./services/patient.service";
-import { PatientDto } from "./types/scheduler-api.types";
+import { CreatePatientDto, PatientDto } from "./types/scheduler-api.types";
 
 describe("PatientFormComponent", () => {
   const existingPatient: PatientDto = {
@@ -10,11 +10,21 @@ describe("PatientFormComponent", () => {
     firstName: "Avery",
     lastName: "Stone",
     dateOfBirth: "1985-03-01",
+    phoneNumber: "555-0100",
+    email: "avery@example.com",
+    addressLine1: "123 Main St",
+    city: "Denver",
+    state: "CO",
+    postalCode: "80202",
     payerName: "Aetna",
     memberId: "AET-44",
+    insuranceSummary: "Commercial PPO",
     eligibilityStatus: "verified",
     lastEligibilityVerifiedAt: "2026-03-10T15:00:00.000Z",
     eligibilityNotes: "Verified on portal.",
+    intakeStatus: "complete",
+    intakeNotes: "Forms received.",
+    missingIntakeItems: [],
   };
 
   let patientService: jasmine.SpyObj<PatientService>;
@@ -26,16 +36,18 @@ describe("PatientFormComponent", () => {
       "updatePatient",
     ]);
     patientService.getPatients.and.returnValue(of([existingPatient]));
-    patientService.createPatient.and.callFake((request) => {
+    patientService.createPatient.and.callFake((request: CreatePatientDto) => {
       return of({
         ...request,
         id: 8,
+        missingIntakeItems: [],
       });
     });
-    patientService.updatePatient.and.callFake((id, request) => {
+    patientService.updatePatient.and.callFake((id: number, request: CreatePatientDto) => {
       return of({
         ...request,
         id,
+        missingIntakeItems: [],
       });
     });
 
@@ -53,14 +65,31 @@ describe("PatientFormComponent", () => {
     fixture.detectChanges();
 
     component.patientForm.setValue({
-      firstName: "Jordan",
-      lastName: "Lee",
-      dateOfBirth: "1992-04-15",
-      payerName: "  Blue Cross  ",
-      memberId: "  BC-1002  ",
-      eligibilityStatus: "pending",
-      lastEligibilityVerifiedAt: "",
-      eligibilityNotes: "  Needs portal review.  ",
+      demographics: {
+        firstName: "Jordan",
+        lastName: "Lee",
+        dateOfBirth: "1992-04-15",
+      },
+      contact: {
+        phoneNumber: " 555-0199 ",
+        email: "jordan@example.com",
+        addressLine1: " 45 Elm St ",
+        city: " Denver ",
+        state: " CO ",
+        postalCode: " 80211 ",
+      },
+      insurance: {
+        payerName: "  Blue Cross  ",
+        memberId: "  BC-1002  ",
+        insuranceSummary: "  PPO on file  ",
+        eligibilityStatus: "pending",
+        lastEligibilityVerifiedAt: "",
+        eligibilityNotes: "  Needs portal review.  ",
+      },
+      intake: {
+        intakeStatus: "inProgress",
+        intakeNotes: "  Waiting on signed consents.  ",
+      },
     });
 
     component.savePatient();
@@ -69,15 +98,24 @@ describe("PatientFormComponent", () => {
       firstName: "Jordan",
       lastName: "Lee",
       dateOfBirth: "1992-04-15",
+      phoneNumber: "555-0199",
+      email: "jordan@example.com",
+      addressLine1: "45 Elm St",
+      city: "Denver",
+      state: "CO",
+      postalCode: "80211",
       payerName: "Blue Cross",
       memberId: "BC-1002",
+      insuranceSummary: "PPO on file",
       eligibilityStatus: "pending",
       lastEligibilityVerifiedAt: null,
       eligibilityNotes: "Needs portal review.",
+      intakeStatus: "inProgress",
+      intakeNotes: "Waiting on signed consents.",
     });
     expect(component.successMessage).toBe("Patient saved successfully.");
     expect(component.isEditing).toBeFalse();
-    expect(component.patientForm.getRawValue().firstName).toBe("");
+    expect(component.patientForm.getRawValue().demographics.firstName).toBe("");
   });
 
   it("updates the selected patient in edit mode", () => {
@@ -87,9 +125,18 @@ describe("PatientFormComponent", () => {
 
     component.editPatient(existingPatient);
     component.patientForm.patchValue({
-      payerName: "Cigna",
-      eligibilityStatus: "failed",
-      eligibilityNotes: "  ID mismatch  ",
+      insurance: {
+        payerName: "Cigna",
+        memberId: existingPatient.memberId,
+        insuranceSummary: "Updated commercial summary",
+        eligibilityStatus: "failed",
+        lastEligibilityVerifiedAt: "2026-03-10T15:00",
+        eligibilityNotes: "  ID mismatch  ",
+      },
+      intake: {
+        intakeStatus: "inProgress",
+        intakeNotes: "  Missing authorization form  ",
+      },
     });
 
     component.savePatient();
@@ -98,11 +145,20 @@ describe("PatientFormComponent", () => {
       firstName: "Avery",
       lastName: "Stone",
       dateOfBirth: "1985-03-01",
+      phoneNumber: "555-0100",
+      email: "avery@example.com",
+      addressLine1: "123 Main St",
+      city: "Denver",
+      state: "CO",
+      postalCode: "80202",
       payerName: "Cigna",
       memberId: "AET-44",
+      insuranceSummary: "Updated commercial summary",
       eligibilityStatus: "failed",
       lastEligibilityVerifiedAt: "2026-03-10T15:00",
       eligibilityNotes: "ID mismatch",
+      intakeStatus: "inProgress",
+      intakeNotes: "Missing authorization form",
     });
     expect(component.successMessage).toBe("Patient updated successfully.");
     expect(component.selectedPatientId).toBeNull();
@@ -114,17 +170,19 @@ describe("PatientFormComponent", () => {
     fixture.detectChanges();
 
     component.patientForm.patchValue({
-      firstName: "",
-      lastName: "",
-      dateOfBirth: "",
+      demographics: {
+        firstName: "",
+        lastName: "",
+        dateOfBirth: "",
+      },
     });
 
     component.savePatient();
 
     expect(patientService.createPatient).not.toHaveBeenCalled();
     expect(patientService.updatePatient).not.toHaveBeenCalled();
-    expect(component.patientForm.controls.firstName.touched).toBeTrue();
-    expect(component.patientForm.controls.lastName.touched).toBeTrue();
-    expect(component.patientForm.controls.dateOfBirth.touched).toBeTrue();
+    expect(component.patientForm.controls.demographics.controls.firstName.touched).toBeTrue();
+    expect(component.patientForm.controls.demographics.controls.lastName.touched).toBeTrue();
+    expect(component.patientForm.controls.demographics.controls.dateOfBirth.touched).toBeTrue();
   });
 });
