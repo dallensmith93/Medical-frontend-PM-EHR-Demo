@@ -1,0 +1,189 @@
+<section class="entity-page">
+  <article class="form-card">
+    <div class="card-copy">
+      <p class="eyebrow">Appointments</p>
+      <h2>Schedule Appointment</h2>
+      <p>Select a patient and provider, then click an open slot on the calendar to add the appointment.</p>
+    </div>
+
+    <form class="entity-form compact-form" [formGroup]="appointmentForm">
+      <label>
+        <span>Patient</span>
+        <select formControlName="patientId">
+          <option [ngValue]="0">Select a patient</option>
+          <option *ngFor="let patient of patients" [ngValue]="patient.id">
+            {{ patient.firstName }} {{ patient.lastName }}
+          </option>
+        </select>
+      </label>
+
+      <label>
+        <span>Provider</span>
+        <select formControlName="providerId">
+          <option [ngValue]="0">All providers</option>
+          <option *ngFor="let provider of providers" [ngValue]="provider.id">
+            {{ provider.name }}
+          </option>
+        </select>
+      </label>
+    </form>
+
+    <div class="selection-summary">
+      <div>
+        <span class="summary-label">Patient</span>
+        <strong>{{ selectedPatientName }}</strong>
+      </div>
+      <div>
+        <span class="summary-label">Provider Filter</span>
+        <strong>{{ selectedProviderName }}</strong>
+      </div>
+      <div>
+        <span class="summary-label">Booking Rule</span>
+        <strong>30 minute click-to-book slots</strong>
+      </div>
+    </div>
+
+    <div class="scheduler-metrics">
+      <article>
+        <span class="summary-label">Visible Appointments</span>
+        <strong>{{ selectedProviderAppointmentCount }}</strong>
+      </article>
+      <article>
+        <span class="summary-label">Open Slots This Week</span>
+        <strong>{{ openSlotCountThisWeek }}</strong>
+      </article>
+      <article>
+        <span class="summary-label">Next Visible Visit</span>
+        <strong>{{ nextAppointmentLabel }}</strong>
+      </article>
+    </div>
+
+    <p class="error-banner" *ngIf="errorMessage">{{ errorMessage }}</p>
+  </article>
+
+  <article class="table-card scheduler-card">
+    <div class="scheduler-toolbar">
+      <div class="card-copy">
+        <p class="eyebrow">Live Scheduler</p>
+        <h2>Appointments Calendar</h2>
+        <p>Occupied slots show existing bookings for the current provider filter. Open slots are ready to book.</p>
+      </div>
+
+      <div class="scheduler-actions">
+        <div class="view-switcher">
+          <button type="button" [class.is-active]="currentView === 'day'" (click)="setView('day')">Day</button>
+          <button type="button" [class.is-active]="currentView === 'week'" (click)="setView('week')">Week</button>
+          <button type="button" [class.is-active]="currentView === 'month'" (click)="setView('month')">Month</button>
+        </div>
+
+        <div class="calendar-nav">
+          <button type="button" (click)="navigateCalendar(-1)">Previous</button>
+          <strong>{{ currentRangeLabel }}</strong>
+          <button type="button" (click)="navigateCalendar(1)">Next</button>
+          <button type="button" class="ghost-chip" (click)="jumpToToday()">Today</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="calendar-shell">
+      <section class="month-grid" *ngIf="currentView === 'month'">
+        <div class="calendar-weekday" *ngFor="let label of weekdayLabels">{{ label }}</div>
+        <button
+          type="button"
+          class="month-cell"
+          *ngFor="let day of monthDays"
+          [class.is-muted]="!day.inCurrentMonth"
+          [class.is-today]="isToday(day.date)"
+          [class.is-selected]="isCurrentDate(day.date)"
+          (click)="selectDate(day.date)"
+        >
+          <div class="month-cell-header">
+            <strong>{{ day.date | date: "d" }}</strong>
+            <span>{{ day.appointments.length }} appt</span>
+          </div>
+          <div class="month-card-list">
+            <div class="calendar-chip" *ngFor="let appointment of day.appointments | slice:0:3">
+              <strong>{{ formatTime(appointment.appointmentDate) }}</strong>
+              <span>{{ patientName(appointment.patientId) }}</span>
+            </div>
+          </div>
+        </button>
+      </section>
+
+      <section class="week-grid" *ngIf="currentView === 'week'">
+        <article class="week-column" *ngFor="let day of weekDays">
+          <header [class.is-today]="isToday(day.date)">
+            <span>{{ day.date | date: "EEE" }}</span>
+            <strong>{{ day.date | date: "MMM d" }}</strong>
+          </header>
+
+          <div class="slot-grid">
+            <button
+              type="button"
+              class="time-slot"
+              *ngFor="let slot of timeSlots"
+              [class.is-open]="slotState(day.date, slot) === 'open'"
+              [class.is-occupied]="slotState(day.date, slot) === 'occupied'"
+              [class.is-selected]="slotState(day.date, slot) === 'selected'"
+              [disabled]="isSaving"
+              (click)="scheduleSlot(day.date, slot)"
+            >
+              <div class="slot-header">
+                <div class="slot-time">{{ slot.label }}</div>
+                <span class="slot-badge">{{ slotState(day.date, slot) }}</span>
+              </div>
+
+              <ng-container *ngIf="slotAppointments(day.date, slot).length > 0; else openWeekSlot">
+                <div class="calendar-event" *ngFor="let appointment of slotAppointments(day.date, slot)">
+                  <strong>{{ patientName(appointment.patientId) }}</strong>
+                  <span>{{ providerName(appointment.providerId) }}</span>
+                </div>
+              </ng-container>
+              <ng-template #openWeekSlot>
+                <div class="slot-open">{{ slotHelperText(day.date, slot) }}</div>
+              </ng-template>
+            </button>
+          </div>
+        </article>
+      </section>
+
+      <section class="day-agenda" *ngIf="currentView === 'day'">
+        <div class="agenda-header">
+          <p class="eyebrow">Daily View</p>
+          <h3>{{ currentDate | date: "fullDate" }}</h3>
+        </div>
+
+        <div class="day-slot-grid">
+          <button
+            type="button"
+            class="day-slot-card"
+            *ngFor="let slot of timeSlots"
+            [class.is-open]="slotState(currentDate, slot) === 'open'"
+            [class.is-occupied]="slotState(currentDate, slot) === 'occupied'"
+            [class.is-selected]="slotState(currentDate, slot) === 'selected'"
+            [disabled]="isSaving"
+            (click)="scheduleSlot(currentDate, slot)"
+          >
+            <div class="slot-header">
+              <div class="agenda-time">
+                <strong>{{ slot.label }}</strong>
+                <span>30 minute slot</span>
+              </div>
+              <span class="slot-badge">{{ slotState(currentDate, slot) }}</span>
+            </div>
+            <ng-container *ngIf="slotAppointments(currentDate, slot).length > 0; else openDaySlot">
+              <div class="agenda-body" *ngFor="let appointment of slotAppointments(currentDate, slot)">
+                <h4>{{ patientName(appointment.patientId) }}</h4>
+                <p>{{ providerName(appointment.providerId) }}</p>
+                <span>{{ appointment.reason }}</span>
+              </div>
+            </ng-container>
+            <ng-template #openDaySlot>
+              <div class="slot-open">{{ slotHelperText(currentDate, slot) }}</div>
+            </ng-template>
+          </button>
+        </div>
+      </section>
+    </div>
+  </article>
+</section>

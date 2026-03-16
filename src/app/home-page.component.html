@@ -1,0 +1,16 @@
+<section class="entity-page">
+  <article class="hero-card">
+    <p class="eyebrow">Medical Practice Scheduler</p>
+    <h2>Manage the practice system</h2>
+    <p>Choose a workflow to create patients, maintain providers, or schedule appointments.</p>
+  </article>
+
+  <section class="home-card-grid">
+    <a class="home-card" *ngFor="let action of actions" [routerLink]="action.route">
+      <p class="eyebrow">Quick Action</p>
+      <h3>{{ action.title }}</h3>
+      <p>{{ action.description }}</p>
+      <span class="home-link">Open</span>
+    </a>
+  </section>
+</section>

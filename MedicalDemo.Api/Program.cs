@@ -2,6 +2,7 @@ using MedicalDemo.Api.Repositories;
 using MedicalDemo.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+const string AngularCorsPolicy = "AngularFrontend";
 
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole(options =>
@@ -12,6 +13,16 @@ builder.Logging.AddSimpleConsole(options =>
 });
 
 builder.Services.AddControllers();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(AngularCorsPolicy, policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:4200")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -34,6 +45,7 @@ app.UseSwaggerUI(options =>
 });
 
 app.UseHttpsRedirection();
+app.UseCors(AngularCorsPolicy);
 app.MapControllers();
 
 app.Run();

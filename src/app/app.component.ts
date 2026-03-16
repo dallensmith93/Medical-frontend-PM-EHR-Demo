@@ -22,6 +22,9 @@ export class AppComponent {
   }
 
   get workspaceLabel(): string {
+    if (this.router.url === "/" || this.router.url.startsWith("/patients") || this.router.url.startsWith("/providers") || this.router.url.startsWith("/appointments")) {
+      return "Scheduler";
+    }
     return this.router.url.startsWith("/ehr") ? "EHR" : "PM";
   }
 

@@ -10,7 +10,7 @@ import {
 @Injectable({
   providedIn: "root",
 })
-export class SchedulerApiService {
+export class AppointmentService {
   private readonly http = inject(HttpClient);
   private readonly appointmentsUrl = `${environment.apiUrl}/appointments`;
 

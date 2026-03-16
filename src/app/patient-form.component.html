@@ -1,0 +1,61 @@
+<section class="entity-page">
+  <article class="form-card">
+    <div class="card-copy">
+      <p class="eyebrow">Patients</p>
+      <h2>Add Patient</h2>
+      <p>Create a new patient record in the scheduler system.</p>
+    </div>
+
+    <form class="entity-form" [formGroup]="patientForm" (ngSubmit)="createPatient()">
+      <label>
+        <span>First Name</span>
+        <input type="text" formControlName="firstName" />
+      </label>
+
+      <label>
+        <span>Last Name</span>
+        <input type="text" formControlName="lastName" />
+      </label>
+
+      <label>
+        <span>Date of Birth</span>
+        <input type="date" formControlName="dateOfBirth" />
+      </label>
+
+      <button type="submit" class="primary-action" [disabled]="isSaving">
+        {{ isSaving ? "Saving..." : "Add Patient" }}
+      </button>
+    </form>
+
+    <p class="success-banner" *ngIf="successMessage">{{ successMessage }}</p>
+  </article>
+
+  <article class="table-card">
+    <div class="card-copy">
+      <p class="eyebrow">Patient List</p>
+      <h2>Patients</h2>
+    </div>
+
+    <div class="table-shell">
+      <table>
+        <thead>
+          <tr>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Date of Birth</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let patient of patients">
+            <td>{{ patient.firstName }}</td>
+            <td>{{ patient.lastName }}</td>
+            <td>{{ patient.dateOfBirth | date: "mediumDate" }}</td>
+          </tr>
+          <tr *ngIf="patients.length === 0">
+            <td colspan="3" class="empty-state">No patients available.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+</section>

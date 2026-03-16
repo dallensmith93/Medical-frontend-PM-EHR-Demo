@@ -46,6 +46,14 @@
       <span class="section-kicker">Workspace</span>
       <strong>{{ workspaceLabel }}</strong>
     </div>
+
+    <nav class="top-nav">
+      <a routerLink="/" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="is-active">Home</a>
+      <a routerLink="/patients" routerLinkActive="is-active">Patients</a>
+      <a routerLink="/providers" routerLinkActive="is-active">Providers</a>
+      <a routerLink="/appointments" routerLinkActive="is-active">Appointments</a>
+    </nav>
+
     <router-outlet></router-outlet>
   </main>
 </div>

@@ -1,6 +1,9 @@
 node_modules/
 dist/
 .angular/
+.codex/
+.planning/
+get-shit-done/
 
 coverage/
 .netlify/

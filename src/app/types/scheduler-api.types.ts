@@ -4,6 +4,19 @@ export interface CreatePatientDto {
   dateOfBirth: string;
 }
 
+export interface PatientDto extends CreatePatientDto {
+  id: number;
+}
+
+export interface CreateProviderDto {
+  name: string;
+  specialty: string;
+}
+
+export interface ProviderDto extends CreateProviderDto {
+  id: number;
+}
+
 export interface CreateAppointmentDto {
   patientId: number;
   providerId: number;

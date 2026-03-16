@@ -1,0 +1,52 @@
+<section class="entity-page">
+  <article class="form-card">
+    <div class="card-copy">
+      <p class="eyebrow">Providers</p>
+      <h2>Add Provider</h2>
+      <p>Maintain the rendering provider directory used by appointment scheduling.</p>
+    </div>
+
+    <form class="entity-form" [formGroup]="providerForm" (ngSubmit)="createProvider()">
+      <label>
+        <span>Name</span>
+        <input type="text" formControlName="name" />
+      </label>
+
+      <label>
+        <span>Specialty</span>
+        <input type="text" formControlName="specialty" />
+      </label>
+
+      <button type="submit" class="primary-action" [disabled]="isSaving">
+        {{ isSaving ? "Saving..." : "Add Provider" }}
+      </button>
+    </form>
+  </article>
+
+  <article class="table-card">
+    <div class="card-copy">
+      <p class="eyebrow">Directory</p>
+      <h2>Providers</h2>
+    </div>
+
+    <div class="table-shell">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Specialty</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let provider of providers">
+            <td>{{ provider.name }}</td>
+            <td>{{ provider.specialty }}</td>
+          </tr>
+          <tr *ngIf="providers.length === 0">
+            <td colspan="2" class="empty-state">No providers available.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+</section>
