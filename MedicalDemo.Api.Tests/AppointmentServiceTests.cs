@@ -8,74 +8,101 @@ namespace MedicalDemo.Api.Tests;
 
 public class AppointmentServiceTests
 {
-    [Fact]
-    public void GetAll_ReturnsAppointmentsSortedWithExistingReadinessState()
+    private readonly InMemoryAppointmentRepository _appointmentRepository = new();
+    private readonly InMemoryPatientRepository _patientRepository = new();
+    private readonly InMemoryAppointmentPrerequisiteRepository _prerequisiteRepository = new();
+    private readonly AppointmentPrerequisiteService _prerequisiteService;
+    private readonly AppointmentService _service;
+
+    public AppointmentServiceTests()
     {
-        var service = CreateService();
+        _prerequisiteService = new AppointmentPrerequisiteService(
+            _prerequisiteRepository,
+            _appointmentRepository,
+            _patientRepository,
+            NullLogger<AppointmentPrerequisiteService>.Instance);
 
-        var appointments = service.GetAll().ToList();
-
-        Assert.True(appointments.Count >= 3);
-        Assert.Equal(appointments.OrderBy(item => item.AppointmentDate).Select(item => item.Id), appointments.Select(item => item.Id));
-        Assert.Contains(appointments, appointment => appointment.EligibilityStatus == "verified");
-        Assert.Contains(appointments, appointment => appointment.EligibilityStatus == "pending");
-        Assert.Contains(appointments, appointment => appointment.EligibilityStatus == "failed");
-    }
-
-    [Fact]
-    public void Create_SetsPendingReadinessDefaultsForNewAppointments()
-    {
-        var service = CreateService();
-
-        var created = service.Create(new CreateAppointmentDTO
-        {
-            PatientId = 1,
-            ProviderId = 1,
-            AppointmentDate = DateTime.UtcNow.Date.AddDays(5).AddHours(14),
-            DurationMinutes = 30,
-            Reason = "  Follow-up visit  "
-        });
-
-        Assert.Equal("pending", created.EligibilityStatus);
-        Assert.Null(created.EligibilityReviewedAt);
-        Assert.Equal("New appointment requires eligibility review.", created.EligibilityNotes);
-        Assert.Equal("Follow-up visit", created.Reason);
-    }
-
-    [Fact]
-    public void UpdateEligibility_NormalizesStatusAndProjectsReviewToAppointmentAndPatient()
-    {
-        var patientRepository = new InMemoryPatientRepository();
-        var appointmentRepository = new InMemoryAppointmentRepository();
-        var service = CreateService(patientRepository, appointmentRepository);
-        var reviewedAt = new DateTime(2026, 3, 16, 18, 45, 0, DateTimeKind.Utc);
-
-        var updated = service.UpdateEligibility(2, new UpdateAppointmentEligibilityDTO
-        {
-            EligibilityStatus = " FAILED ",
-            EligibilityReviewedAt = reviewedAt,
-            EligibilityNotes = "  Subscriber ID mismatch.  "
-        });
-
-        Assert.Equal("failed", updated.EligibilityStatus);
-        Assert.Equal(reviewedAt, updated.EligibilityReviewedAt);
-        Assert.Equal("Subscriber ID mismatch.", updated.EligibilityNotes);
-
-        var patient = patientRepository.GetById(2);
-        Assert.NotNull(patient);
-        Assert.Equal("failed", patient!.EligibilityStatus);
-        Assert.Equal(reviewedAt, patient.LastEligibilityVerifiedAt);
-        Assert.Equal("Subscriber ID mismatch.", patient.EligibilityNotes);
-    }
-
-    private static AppointmentService CreateService(
-        IPatientRepository? patientRepository = null,
-        IAppointmentRepository? appointmentRepository = null)
-    {
-        return new AppointmentService(
-            appointmentRepository ?? new InMemoryAppointmentRepository(),
-            patientRepository ?? new InMemoryPatientRepository(),
+        _service = new AppointmentService(
+            _appointmentRepository,
+            _patientRepository,
             new InMemoryProviderRepository(),
+            _prerequisiteService,
             NullLogger<AppointmentService>.Instance);
+    }
+
+    [Fact]
+    public void GetAll_ProjectsCompletePatientIntakeToAppointments()
+    {
+        var appointment = _service.GetAll().First(item => item.PatientId == 1);
+
+        Assert.Equal("complete", appointment.IntakeStatus);
+        Assert.True(appointment.IsIntakeComplete);
+        Assert.Empty(appointment.MissingIntakeItems);
+    }
+
+    [Fact]
+    public void GetAll_ProjectsMissingItemsForIncompletePatientIntake()
+    {
+        _service.Create(new CreateAppointmentDTO
+        {
+            PatientId = 2,
+            ProviderId = 1,
+            AppointmentDate = DateTime.UtcNow.Date.AddDays(3).AddHours(9),
+            DurationMinutes = 30,
+            Reason = "Intake review"
+        });
+
+        var appointment = _service.GetAll()
+            .Where(item => item.PatientId == 2)
+            .OrderByDescending(item => item.AppointmentDate)
+            .First();
+
+        Assert.Equal("inProgress", appointment.IntakeStatus);
+        Assert.False(appointment.IsIntakeComplete);
+        Assert.Contains("intake notes", appointment.MissingIntakeItems);
+    }
+
+    [Fact]
+    public void GetAll_ReturnsNotRequiredWhenNoPrerequisiteRecordExistsForAKind()
+    {
+        var appointment = _service.GetAll().First(item => item.Id == 1);
+
+        Assert.Equal("approved", appointment.Authorization.Status);
+        Assert.Equal("notRequired", appointment.Referral.Status);
+        Assert.False(appointment.Referral.IsBlocking);
+    }
+
+    [Fact]
+    public void GetAll_ProjectsBlockingPrerequisiteSummariesAndDueDates()
+    {
+        var appointment = _service.GetAll().First(item => item.Id == 2);
+
+        Assert.Equal("needed", appointment.Authorization.Status);
+        Assert.True(appointment.Authorization.IsBlocking);
+        Assert.Equal("submitted", appointment.Referral.Status);
+        Assert.True(appointment.Referral.IsBlocking);
+        Assert.True(appointment.HasPrerequisiteBlocker);
+        Assert.NotNull(appointment.Authorization.DueDate);
+        Assert.Contains("Referral request", appointment.Referral.Notes);
+    }
+
+    [Fact]
+    public void GetAll_ProjectsExpiredSummaryWhenApprovalExpiresBeforeVisit()
+    {
+        _prerequisiteService.Create(new CreateAppointmentPrerequisiteDTO
+        {
+            AppointmentId = 3,
+            PatientId = 3,
+            Kind = "authorization",
+            Status = "approved",
+            ExpiresOn = DateOnly.FromDateTime(_appointmentRepository.GetById(3)!.AppointmentDate.AddDays(-1)),
+            Notes = "Approval expired before the scheduled visit."
+        });
+
+        var appointment = _service.GetAll().First(item => item.Id == 3);
+
+        Assert.Equal("expired", appointment.Authorization.Status);
+        Assert.True(appointment.Authorization.IsBlocking);
+        Assert.True(appointment.HasPrerequisiteBlocker);
     }
 }
