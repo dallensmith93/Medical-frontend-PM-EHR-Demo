@@ -5,6 +5,7 @@ import { AppointmentService } from "./services/appointment.service";
 import { PatientService } from "./services/patient.service";
 import { ProviderService } from "./services/provider.service";
 import {
+  AppointmentPrerequisiteDto,
   AppointmentResponseDto,
   PatientDto,
   ProviderDto,
@@ -96,6 +97,27 @@ describe("AppointmentSchedulerComponent", () => {
       intakeStatus: "complete",
       isIntakeComplete: true,
       missingIntakeItems: [],
+      authorization: {
+        id: 10,
+        kind: "authorization",
+        isRequired: true,
+        status: "approved",
+        dueDate: "2026-03-17",
+        expiresOn: "2026-03-30",
+        notes: "Approved for the wellness visit.",
+        isBlocking: false,
+      },
+      referral: {
+        id: null,
+        kind: "referral",
+        isRequired: false,
+        status: "notRequired",
+        dueDate: null,
+        expiresOn: null,
+        notes: "",
+        isBlocking: false,
+      },
+      hasPrerequisiteBlocker: false,
     },
     {
       id: 102,
@@ -110,6 +132,27 @@ describe("AppointmentSchedulerComponent", () => {
       intakeStatus: "inProgress",
       isIntakeComplete: false,
       missingIntakeItems: ["Insurance card", "Signed consent"],
+      authorization: {
+        id: 20,
+        kind: "authorization",
+        isRequired: true,
+        status: "needed",
+        dueDate: "2026-03-17",
+        expiresOn: null,
+        notes: "Submit auth before the visit.",
+        isBlocking: true,
+      },
+      referral: {
+        id: 21,
+        kind: "referral",
+        isRequired: true,
+        status: "submitted",
+        dueDate: "2026-03-17",
+        expiresOn: null,
+        notes: "Referral request sent to PCP office.",
+        isBlocking: true,
+      },
+      hasPrerequisiteBlocker: true,
     },
     {
       id: 103,
@@ -124,8 +167,40 @@ describe("AppointmentSchedulerComponent", () => {
       intakeStatus: "notStarted",
       isIntakeComplete: false,
       missingIntakeItems: ["Demographics", "Insurance card", "Medical history"],
+      authorization: {
+        id: 30,
+        kind: "authorization",
+        isRequired: true,
+        status: "expired",
+        dueDate: "2026-03-18",
+        expiresOn: "2026-03-18",
+        notes: "Approval expired before the rescheduled visit.",
+        isBlocking: true,
+      },
+      referral: {
+        id: 31,
+        kind: "referral",
+        isRequired: true,
+        status: "denied",
+        dueDate: "2026-03-18",
+        expiresOn: null,
+        notes: "Referral denied until subscriber data is corrected.",
+        isBlocking: true,
+      },
+      hasPrerequisiteBlocker: true,
     },
   ];
+
+  const updatedPrerequisite: AppointmentPrerequisiteDto = {
+    id: 20,
+    appointmentId: 102,
+    patientId: 2,
+    kind: "authorization",
+    status: "submitted",
+    dueDate: "2026-03-17",
+    expiresOn: null,
+    notes: "Submitted to payer.",
+  };
 
   let appointmentService: jasmine.SpyObj<AppointmentService>;
   let patientService: jasmine.SpyObj<PatientService>;
@@ -136,6 +211,9 @@ describe("AppointmentSchedulerComponent", () => {
       "getAppointments",
       "createAppointment",
       "updateEligibility",
+      "getAppointmentPrerequisites",
+      "createAppointmentPrerequisite",
+      "updateAppointmentPrerequisite",
     ]);
     patientService = jasmine.createSpyObj<PatientService>("PatientService", ["getPatients"]);
     providerService = jasmine.createSpyObj<ProviderService>("ProviderService", ["getProviders"]);
@@ -143,6 +221,9 @@ describe("AppointmentSchedulerComponent", () => {
     appointmentService.getAppointments.and.returnValue(of(appointments));
     appointmentService.createAppointment.and.returnValue(of(appointments[0]));
     appointmentService.updateEligibility.and.returnValue(of(appointments[0]));
+    appointmentService.getAppointmentPrerequisites.and.returnValue(of([]));
+    appointmentService.createAppointmentPrerequisite.and.returnValue(of(updatedPrerequisite));
+    appointmentService.updateAppointmentPrerequisite.and.returnValue(of(updatedPrerequisite));
     patientService.getPatients.and.returnValue(of(patients));
     providerService.getProviders.and.returnValue(of(providers));
 
@@ -160,41 +241,69 @@ describe("AppointmentSchedulerComponent", () => {
     const fixture = TestBed.createComponent(AppointmentSchedulerComponent);
     const component = fixture.componentInstance;
     fixture.detectChanges();
+    component.appointments = appointments;
     const completeAppointment = component.appointments.find((appointment) => appointment.id === 101);
 
     expect(completeAppointment).toBeDefined();
-    expect(component.eligibilityBadgeClass(completeAppointment!.eligibilityStatus)).toBe("is-verified");
-    expect(component.shouldWarnForEligibility(completeAppointment!)).toBeFalse();
+    expect(component.intakeBadgeClass(completeAppointment!.intakeStatus)).toBe("is-complete");
+    expect(component.shouldWarnForIntake(completeAppointment!)).toBeFalse();
+    expect(component.intakeSummary(completeAppointment!)).toBe("Intake complete");
   });
 
-  it("renders an incomplete intake appointment with a visible pending warning", () => {
-    const fixture = TestBed.createComponent(AppointmentSchedulerComponent);
-    const component = fixture.componentInstance;
-    fixture.detectChanges();
-    const pendingAppointment = component.appointments.find((appointment) => appointment.id === 102);
-
-    expect(pendingAppointment).toBeDefined();
-    expect(component.eligibilityBadgeClass(pendingAppointment!.eligibilityStatus)).toBe("is-pending");
-    expect(component.shouldWarnForEligibility(pendingAppointment!)).toBeTrue();
-    expect(component.eligibilityWarningText(pendingAppointment!)).toBe(
-      "Eligibility review is still pending before this appointment.",
-    );
-  });
-
-  it("shows a failed-readiness warning in the week slot card", () => {
+  it("renders a prerequisite blocker warning in the week slot card", () => {
     const fixture = TestBed.createComponent(AppointmentSchedulerComponent);
     const component = fixture.componentInstance;
 
     component.currentView = "week";
-    component.currentDate = new Date(2026, 2, 19);
+    component.currentDate = new Date(2026, 2, 18);
     fixture.detectChanges();
 
     const warningElements = Array.from(
-      fixture.nativeElement.querySelectorAll(".eligibility-warning"),
+      fixture.nativeElement.querySelectorAll(".prerequisite-warning"),
     ).map((element) => ((element as Element).textContent ?? "").trim());
 
-    expect(warningElements).toContain(
-      "Coverage issue found. Follow up with patient or payer before the visit.",
-    );
+    expect(warningElements.some((text) => text.includes("Authorization needed"))).toBeTrue();
+  });
+
+  it("shows due-date and notes detail for prerequisite follow-up", () => {
+    const fixture = TestBed.createComponent(AppointmentSchedulerComponent);
+    fixture.detectChanges();
+
+    const detailText = fixture.nativeElement.textContent ?? "";
+
+    expect(detailText).toContain("Referral request sent to PCP office.");
+    expect(detailText).toContain("Due");
+  });
+
+  it("updates an existing prerequisite through the appointment service", () => {
+    const fixture = TestBed.createComponent(AppointmentSchedulerComponent);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    component.savePrerequisite(appointments[1], "authorization", "submitted");
+
+    expect(appointmentService.updateAppointmentPrerequisite).toHaveBeenCalledWith(20, {
+      status: "submitted",
+      dueDate: "2026-03-17",
+      expiresOn: null,
+      notes: "Submit auth before the visit.",
+    });
+  });
+
+  it("creates a prerequisite when the appointment has no existing record for that kind", () => {
+    const fixture = TestBed.createComponent(AppointmentSchedulerComponent);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    component.savePrerequisite(appointments[0], "referral", "needed");
+
+    expect(appointmentService.createAppointmentPrerequisite).toHaveBeenCalledWith(101, {
+      patientId: 1,
+      kind: "referral",
+      status: "needed",
+      dueDate: null,
+      expiresOn: null,
+      notes: "",
+    });
   });
 });
