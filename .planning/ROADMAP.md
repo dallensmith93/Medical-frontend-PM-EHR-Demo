@@ -71,11 +71,12 @@ Plans:
   2. Each appointment shows whether authorization or referral is required and its current status.
   3. Expired, missing, or pending items are highlighted before the visit.
   4. Staff can move items through statuses such as needed, submitted, approved, or denied.
-**Plans**: 2 plans
+**Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: Add referral and authorization backend models, status rules, and linked endpoints
-- [ ] 04-02: Add scheduling-side auth and referral views, alerts, and update actions
+- [ ] 04-00: Add Wave 0 backend and scheduler regression coverage for auth/referral workflows
+- [ ] 04-01: Add referral and authorization backend models, status rules, appointment summaries, and linked endpoints
+- [ ] 04-02: Add scheduling-side auth and referral views, alerts, follow-up details, and update actions
 
 ### Phase 5: Claim Scrubbing and Charge Readiness
 **Goal**: Add pre-billing checks that catch obvious claim issues before submission.
