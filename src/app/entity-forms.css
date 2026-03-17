@@ -44,8 +44,28 @@
   gap: 1rem;
 }
 
+.intake-form {
+  grid-template-columns: 1fr;
+}
+
 .compact-form {
   grid-template-columns: repeat(2, minmax(240px, 320px));
+}
+
+.intake-section {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  margin: 0;
+}
+
+.intake-section legend {
+  padding: 0 0.35rem;
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
 }
 
 .entity-form label {
@@ -72,14 +92,14 @@
 
 .selection-summary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
   margin-top: 1.25rem;
 }
 
 .scheduler-metrics {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
   margin-top: 1rem;
 }
@@ -305,6 +325,10 @@
   color: var(--muted);
 }
 
+.align-start {
+  justify-self: start;
+}
+
 .week-grid {
   grid-template-columns: repeat(7, minmax(0, 1fr));
 }
@@ -430,6 +454,257 @@
   text-transform: uppercase;
 }
 
+.eligibility-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(16, 33, 44, 0.08);
+  color: var(--ink);
+}
+
+.eligibility-badge.compact {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.68rem;
+}
+
+.eligibility-badge.is-verified {
+  background: rgba(26, 127, 122, 0.12);
+  color: var(--teal-deep);
+}
+
+.eligibility-badge.is-pending {
+  background: rgba(235, 161, 82, 0.18);
+  color: #9a5a10;
+}
+
+.eligibility-badge.is-failed {
+  background: rgba(185, 95, 89, 0.14);
+  color: #8c3430;
+}
+
+.eligibility-warning,
+.eligibility-note {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.eligibility-warning {
+  color: #8c3430;
+}
+
+.intake-warning {
+  margin: 0;
+  color: #9a5a10;
+  font-size: 0.85rem;
+}
+
+.prerequisite-warning {
+  margin: 0;
+  color: #7c4d9a;
+  font-size: 0.85rem;
+}
+
+.eligibility-note {
+  color: var(--muted);
+}
+
+.intake-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(16, 33, 44, 0.08);
+  color: var(--ink);
+}
+
+.intake-badge.compact {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.68rem;
+}
+
+.intake-badge.is-notStarted {
+  background: rgba(185, 95, 89, 0.12);
+  color: #8c3430;
+}
+
+.intake-badge.is-inProgress {
+  background: rgba(235, 161, 82, 0.18);
+  color: #9a5a10;
+}
+
+.intake-badge.is-complete {
+  background: rgba(26, 127, 122, 0.12);
+  color: var(--teal-deep);
+}
+
+.prerequisite-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(16, 33, 44, 0.08);
+  color: var(--ink);
+}
+
+.prerequisite-badge.compact {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.68rem;
+}
+
+.prerequisite-badge.is-notRequired {
+  background: rgba(16, 33, 44, 0.08);
+  color: var(--muted);
+}
+
+.prerequisite-badge.is-needed,
+.prerequisite-badge.is-submitted {
+  background: rgba(235, 161, 82, 0.18);
+  color: #9a5a10;
+}
+
+.prerequisite-badge.is-approved {
+  background: rgba(26, 127, 122, 0.12);
+  color: var(--teal-deep);
+}
+
+.prerequisite-badge.is-denied,
+.prerequisite-badge.is-expired {
+  background: rgba(124, 77, 154, 0.14);
+  color: #6d3d95;
+}
+
+.prerequisite-badge.is-draft,
+.prerequisite-badge.is-reviewNeeded {
+  background: rgba(235, 161, 82, 0.18);
+  color: #9a5a10;
+}
+
+.prerequisite-badge.is-readyToSubmit {
+  background: rgba(26, 127, 122, 0.12);
+  color: var(--teal-deep);
+}
+
+.eligibility-queue,
+.eligibility-list,
+.eligibility-card,
+.eligibility-card-header,
+.eligibility-meta,
+.eligibility-actions {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.prerequisite-grid,
+.prerequisite-panel,
+.prerequisite-panel-header,
+.prerequisite-fields,
+.prerequisite-actions {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.eligibility-queue {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.eligibility-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.eligibility-card {
+  padding: 1rem;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 251, 0.92));
+}
+
+.eligibility-card-header {
+  grid-template-columns: 1fr auto;
+  align-items: start;
+}
+
+.eligibility-card-header p,
+.eligibility-meta span {
+  margin: 0;
+}
+
+.eligibility-meta {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.eligibility-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.prerequisite-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.prerequisite-panel {
+  padding: 1rem;
+  border-radius: 18px;
+  border: 1px solid rgba(124, 77, 154, 0.16);
+  background: linear-gradient(180deg, rgba(124, 77, 154, 0.06), rgba(255, 255, 255, 0.94));
+}
+
+.prerequisite-panel-header {
+  grid-template-columns: 1fr auto;
+  align-items: start;
+}
+
+.prerequisite-detail {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.prerequisite-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.prerequisite-fields label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.prerequisite-fields input,
+.prerequisite-fields textarea {
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+}
+
+.prerequisite-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .slot-open {
   color: var(--muted);
   font-size: 0.86rem;
@@ -501,7 +776,14 @@ th {
   .compact-form,
   .selection-summary,
   .scheduler-metrics,
-  .day-slot-grid {
+  .day-slot-grid,
+  .eligibility-list,
+  .prerequisite-grid,
+  .prerequisite-fields,
+  .eligibility-meta,
+  .eligibility-actions,
+  .prerequisite-actions,
+  .intake-section {
     grid-template-columns: 1fr;
   }
 

@@ -29,10 +29,14 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<IPatientRepository, InMemoryPatientRepository>();
 builder.Services.AddSingleton<IProviderRepository, InMemoryProviderRepository>();
 builder.Services.AddSingleton<IAppointmentRepository, InMemoryAppointmentRepository>();
+builder.Services.AddSingleton<IAppointmentPrerequisiteRepository, InMemoryAppointmentPrerequisiteRepository>();
+builder.Services.AddSingleton<IAppointmentChargeRepository, InMemoryAppointmentChargeRepository>();
 
 builder.Services.AddScoped<IPatientService, PatientService>();
 builder.Services.AddScoped<IProviderService, ProviderService>();
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
+builder.Services.AddScoped<IAppointmentPrerequisiteService, AppointmentPrerequisiteService>();
+builder.Services.AddScoped<IAppointmentChargeService, AppointmentChargeService>();
 
 var app = builder.Build();
 

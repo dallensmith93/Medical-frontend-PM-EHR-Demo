@@ -3,7 +3,7 @@
     <div class="card-copy">
       <p class="eyebrow">Appointments</p>
       <h2>Schedule Appointment</h2>
-      <p>Select a patient and provider, then click an open slot on the calendar to add the appointment.</p>
+      <p>Select a patient and provider, then click an open slot on the calendar to add the appointment and track eligibility, intake, and prerequisites.</p>
     </div>
 
     <form class="entity-form compact-form" [formGroup]="appointmentForm">
@@ -41,6 +41,10 @@
         <span class="summary-label">Booking Rule</span>
         <strong>30 minute click-to-book slots</strong>
       </div>
+      <div>
+        <span class="summary-label">Eligibility Snapshot</span>
+        <strong>{{ selectedPatientEligibilityLabel }}</strong>
+      </div>
     </div>
 
     <div class="scheduler-metrics">
@@ -55,6 +59,22 @@
       <article>
         <span class="summary-label">Next Visible Visit</span>
         <strong>{{ nextAppointmentLabel }}</strong>
+      </article>
+      <article>
+        <span class="summary-label">Needs Eligibility Review</span>
+        <strong>{{ appointmentsRequiringReviewCount }}</strong>
+      </article>
+      <article>
+        <span class="summary-label">Incomplete Intake</span>
+        <strong>{{ appointmentsMissingIntakeCount }}</strong>
+      </article>
+      <article>
+        <span class="summary-label">Prerequisite Blockers</span>
+        <strong>{{ appointmentsWithPrerequisiteBlockersCount }}</strong>
+      </article>
+      <article>
+        <span class="summary-label">Billing Review Needed</span>
+        <strong>{{ appointmentsWithBillingReviewCount }}</strong>
       </article>
     </div>
 
@@ -105,6 +125,21 @@
             <div class="calendar-chip" *ngFor="let appointment of day.appointments | slice:0:3">
               <strong>{{ formatTime(appointment.appointmentDate) }}</strong>
               <span>{{ patientName(appointment.patientId) }}</span>
+              <span class="eligibility-badge compact" [ngClass]="eligibilityBadgeClass(appointment.eligibilityStatus)">
+                {{ appointment.eligibilityStatus }}
+              </span>
+              <span class="intake-badge compact" [ngClass]="intakeBadgeClass(appointment.intakeStatus)">
+                {{ formatIntakeLabel(appointment.intakeStatus) }}
+              </span>
+              <span class="prerequisite-badge compact" [ngClass]="prerequisiteBadgeClass(appointment.authorization.status)">
+                Auth {{ formatPrerequisiteLabel(appointment.authorization.status) }}
+              </span>
+              <span class="prerequisite-badge compact" [ngClass]="prerequisiteBadgeClass(appointment.referral.status)">
+                Referral {{ formatPrerequisiteLabel(appointment.referral.status) }}
+              </span>
+              <span class="prerequisite-badge compact" [ngClass]="billingBadgeClass(appointment.billing.status)">
+                Billing {{ billingStatusLabel(appointment.billing.status) }}
+              </span>
             </div>
           </div>
         </button>
@@ -137,6 +172,33 @@
                 <div class="calendar-event" *ngFor="let appointment of slotAppointments(day.date, slot)">
                   <strong>{{ patientName(appointment.patientId) }}</strong>
                   <span>{{ providerName(appointment.providerId) }}</span>
+                  <span class="eligibility-badge compact" [ngClass]="eligibilityBadgeClass(appointment.eligibilityStatus)">
+                    {{ appointment.eligibilityStatus }}
+                  </span>
+                  <span class="intake-badge compact" [ngClass]="intakeBadgeClass(appointment.intakeStatus)">
+                    {{ formatIntakeLabel(appointment.intakeStatus) }}
+                  </span>
+                  <span class="prerequisite-badge compact" [ngClass]="prerequisiteBadgeClass(appointment.authorization.status)">
+                    Auth {{ formatPrerequisiteLabel(appointment.authorization.status) }}
+                  </span>
+                  <span class="prerequisite-badge compact" [ngClass]="prerequisiteBadgeClass(appointment.referral.status)">
+                    Referral {{ formatPrerequisiteLabel(appointment.referral.status) }}
+                  </span>
+                  <span class="prerequisite-badge compact" [ngClass]="billingBadgeClass(appointment.billing.status)">
+                    Billing {{ billingStatusLabel(appointment.billing.status) }}
+                  </span>
+                  <p *ngIf="shouldWarnForEligibility(appointment)" class="eligibility-warning">
+                    {{ eligibilityWarningText(appointment) }}
+                  </p>
+                  <p *ngIf="shouldWarnForIntake(appointment)" class="intake-warning">
+                    {{ intakeSummary(appointment) }}
+                  </p>
+                  <p *ngIf="appointment.hasPrerequisiteBlocker" class="prerequisite-warning">
+                    {{ prerequisiteWarningText(appointment) }}
+                  </p>
+                  <p *ngIf="appointment.billing.warningCount > 0" class="prerequisite-warning">
+                    {{ billingWarningSummary(appointment) }}
+                  </p>
                 </div>
               </ng-container>
               <ng-template #openWeekSlot>
@@ -176,6 +238,33 @@
                 <h4>{{ patientName(appointment.patientId) }}</h4>
                 <p>{{ providerName(appointment.providerId) }}</p>
                 <span>{{ appointment.reason }}</span>
+                <span class="eligibility-badge compact" [ngClass]="eligibilityBadgeClass(appointment.eligibilityStatus)">
+                  {{ appointment.eligibilityStatus }}
+                </span>
+                <span class="intake-badge compact" [ngClass]="intakeBadgeClass(appointment.intakeStatus)">
+                  {{ formatIntakeLabel(appointment.intakeStatus) }}
+                </span>
+                <span class="prerequisite-badge compact" [ngClass]="prerequisiteBadgeClass(appointment.authorization.status)">
+                  Authorization {{ formatPrerequisiteLabel(appointment.authorization.status) }}
+                </span>
+                <span class="prerequisite-badge compact" [ngClass]="prerequisiteBadgeClass(appointment.referral.status)">
+                  Referral {{ formatPrerequisiteLabel(appointment.referral.status) }}
+                </span>
+                <span class="prerequisite-badge compact" [ngClass]="billingBadgeClass(appointment.billing.status)">
+                  Billing {{ billingStatusLabel(appointment.billing.status) }}
+                </span>
+                <p *ngIf="shouldWarnForEligibility(appointment)" class="eligibility-warning">
+                  {{ eligibilityWarningText(appointment) }}
+                </p>
+                <p *ngIf="shouldWarnForIntake(appointment)" class="intake-warning">
+                  {{ intakeSummary(appointment) }}
+                </p>
+                <p *ngIf="appointment.hasPrerequisiteBlocker" class="prerequisite-warning">
+                  {{ prerequisiteWarningText(appointment) }}
+                </p>
+                <p *ngIf="appointment.billing.warningCount > 0" class="prerequisite-warning">
+                  {{ billingWarningSummary(appointment) }}
+                </p>
               </div>
             </ng-container>
             <ng-template #openDaySlot>
@@ -185,5 +274,241 @@
         </div>
       </section>
     </div>
+
+    <section class="eligibility-queue">
+      <div class="card-copy">
+        <p class="eyebrow">Prerequisite Queue</p>
+        <h3>Upcoming Visits</h3>
+        <p>Simulate payer readiness and update authorization or referral follow-up details without leaving the scheduler.</p>
+      </div>
+
+      <div class="eligibility-list" *ngIf="upcomingAppointments.length > 0; else noUpcomingAppointments">
+        <article class="eligibility-card" *ngFor="let appointment of upcomingAppointments">
+          <div class="eligibility-card-header">
+            <div>
+              <strong>{{ patientName(appointment.patientId) }}</strong>
+              <p>{{ providerName(appointment.providerId) }} • {{ appointment.appointmentDate | date: "EEE, MMM d • h:mm a" }}</p>
+            </div>
+            <span class="eligibility-badge" [ngClass]="eligibilityBadgeClass(appointment.eligibilityStatus)">
+              {{ appointment.eligibilityStatus }}
+            </span>
+          </div>
+
+          <p class="eligibility-note">{{ appointment.eligibilityNotes || eligibilityWarningText(appointment) }}</p>
+
+          <div class="eligibility-meta">
+            <span>Reason: {{ appointment.reason }}</span>
+            <span>Last review: {{ appointment.eligibilityReviewedAt ? (appointment.eligibilityReviewedAt | date: "short") : "Not reviewed yet" }}</span>
+          </div>
+
+          <div class="eligibility-meta">
+            <span>Intake: {{ formatIntakeLabel(appointment.intakeStatus) }}</span>
+            <span>{{ intakeSummary(appointment) }}</span>
+          </div>
+
+          <div class="eligibility-meta">
+            <span>Billing: {{ billingStatusLabel(appointment.billing.status) }}</span>
+            <span>{{ appointment.billing.warningCount }} warning{{ appointment.billing.warningCount === 1 ? "" : "s" }}</span>
+          </div>
+
+          <p *ngIf="appointment.hasPrerequisiteBlocker" class="prerequisite-warning">
+            {{ prerequisiteWarningText(appointment) }}
+          </p>
+          <p *ngIf="appointment.billing.warningCount > 0" class="prerequisite-warning">
+            {{ billingWarningSummary(appointment) }}
+          </p>
+
+          <div class="prerequisite-grid">
+            <article class="prerequisite-panel" *ngFor="let kind of prerequisiteKinds">
+              <div class="prerequisite-panel-header">
+                <strong>{{ kind === 'authorization' ? 'Authorization' : 'Referral' }}</strong>
+                <span
+                  class="prerequisite-badge"
+                  [ngClass]="prerequisiteBadgeClass(getSummary(appointment, kind).status)"
+                >
+                  {{ formatPrerequisiteLabel(getSummary(appointment, kind).status) }}
+                </span>
+              </div>
+
+              <p class="prerequisite-detail">{{ prerequisiteDetailText(getSummary(appointment, kind)) }}</p>
+
+              <div class="prerequisite-fields">
+                <label>
+                  <span>Due Date</span>
+                  <input
+                    type="date"
+                    [value]="draftValue(appointment, kind, 'dueDate')"
+                    (input)="updateDraft(appointment, kind, 'dueDate', $any($event.target).value)"
+                  />
+                </label>
+                <label>
+                  <span>Expires On</span>
+                  <input
+                    type="date"
+                    [value]="draftValue(appointment, kind, 'expiresOn')"
+                    (input)="updateDraft(appointment, kind, 'expiresOn', $any($event.target).value)"
+                  />
+                </label>
+                <label class="form-span">
+                  <span>Notes</span>
+                  <textarea
+                    rows="2"
+                    [value]="draftValue(appointment, kind, 'notes')"
+                    (input)="updateDraft(appointment, kind, 'notes', $any($event.target).value)"
+                  ></textarea>
+                </label>
+              </div>
+
+              <div class="prerequisite-actions">
+                <button
+                  type="button"
+                  class="ghost-chip"
+                  [disabled]="isSavingPrerequisite(appointment.id, kind)"
+                  (click)="savePrerequisite(appointment, kind, 'needed')"
+                >
+                  Mark Needed
+                </button>
+                <button
+                  type="button"
+                  class="ghost-chip"
+                  [disabled]="isSavingPrerequisite(appointment.id, kind)"
+                  (click)="savePrerequisite(appointment, kind, 'submitted')"
+                >
+                  Mark Submitted
+                </button>
+                <button
+                  type="button"
+                  class="ghost-chip"
+                  [disabled]="isSavingPrerequisite(appointment.id, kind)"
+                  (click)="savePrerequisite(appointment, kind, 'approved')"
+                >
+                  Mark Approved
+                </button>
+                <button
+                  type="button"
+                  class="ghost-chip"
+                  [disabled]="isSavingPrerequisite(appointment.id, kind)"
+                  (click)="savePrerequisite(appointment, kind, 'denied')"
+                >
+                  Mark Denied
+                </button>
+              </div>
+            </article>
+          </div>
+
+          <article class="prerequisite-panel">
+            <div class="prerequisite-panel-header">
+              <strong>Charge Readiness</strong>
+              <span
+                class="prerequisite-badge"
+                [ngClass]="billingBadgeClass(appointment.billing.status)"
+              >
+                {{ billingStatusLabel(appointment.billing.status) }}
+              </span>
+            </div>
+
+            <p class="prerequisite-detail">
+              {{ billingWarningSummary(appointment) }}
+            </p>
+
+            <div class="prerequisite-fields">
+              <label>
+                <span>Diagnosis</span>
+                <input
+                  type="text"
+                  [value]="chargeDraftValue(appointment, 'diagnosisCode')"
+                  (input)="updateChargeDraft(appointment, 'diagnosisCode', $any($event.target).value)"
+                />
+              </label>
+              <label>
+                <span>Procedure</span>
+                <input
+                  type="text"
+                  [value]="chargeDraftValue(appointment, 'procedureCode')"
+                  (input)="updateChargeDraft(appointment, 'procedureCode', $any($event.target).value)"
+                />
+              </label>
+              <label>
+                <span>Modifier</span>
+                <input
+                  type="text"
+                  [value]="chargeDraftValue(appointment, 'modifier')"
+                  (input)="updateChargeDraft(appointment, 'modifier', $any($event.target).value)"
+                />
+              </label>
+              <label>
+                <span>Units</span>
+                <input
+                  type="number"
+                  min="0"
+                  [value]="chargeDraftValue(appointment, 'units')"
+                  (input)="updateChargeDraft(appointment, 'units', $any($event.target).value)"
+                />
+              </label>
+              <label>
+                <span>Amount</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  [value]="chargeDraftValue(appointment, 'amount')"
+                  (input)="updateChargeDraft(appointment, 'amount', $any($event.target).value)"
+                />
+              </label>
+              <label class="form-span">
+                <span>Charge Notes</span>
+                <textarea
+                  rows="2"
+                  [value]="chargeDraftValue(appointment, 'notes')"
+                  (input)="updateChargeDraft(appointment, 'notes', $any($event.target).value)"
+                ></textarea>
+              </label>
+            </div>
+
+            <div class="prerequisite-actions">
+              <button
+                type="button"
+                class="ghost-chip"
+                [disabled]="isSavingCharge(appointment.id)"
+                (click)="saveCharge(appointment)"
+              >
+                Save Charge
+              </button>
+            </div>
+          </article>
+
+          <div class="eligibility-actions">
+            <button
+              type="button"
+              class="ghost-chip"
+              [disabled]="eligibilityUpdatingId === appointment.id"
+              (click)="simulateEligibilityCheck(appointment, 'verified')"
+            >
+              Mark Verified
+            </button>
+            <button
+              type="button"
+              class="ghost-chip"
+              [disabled]="eligibilityUpdatingId === appointment.id"
+              (click)="simulateEligibilityCheck(appointment, 'pending')"
+            >
+              Keep Pending
+            </button>
+            <button
+              type="button"
+              class="ghost-chip"
+              [disabled]="eligibilityUpdatingId === appointment.id"
+              (click)="simulateEligibilityCheck(appointment, 'failed')"
+            >
+              Mark Failed
+            </button>
+          </div>
+        </article>
+      </div>
+
+      <ng-template #noUpcomingAppointments>
+        <div class="empty-day large">No upcoming appointments are visible for the current filter.</div>
+      </ng-template>
+    </section>
   </article>
 </section>

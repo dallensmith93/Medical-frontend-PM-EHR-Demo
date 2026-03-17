@@ -2,28 +2,122 @@
   <article class="form-card">
     <div class="card-copy">
       <p class="eyebrow">Patients</p>
-      <h2>Add Patient</h2>
-      <p>Create a new patient record in the scheduler system.</p>
+      <h2>{{ isEditing ? "Update Patient" : "Add Patient" }}</h2>
+      <p>Capture demographics and insurance details so the scheduler can surface visit readiness.</p>
     </div>
 
-    <form class="entity-form" [formGroup]="patientForm" (ngSubmit)="createPatient()">
-      <label>
-        <span>First Name</span>
-        <input type="text" formControlName="firstName" />
-      </label>
+    <form class="entity-form intake-form" [formGroup]="patientForm" (ngSubmit)="savePatient()">
+      <fieldset class="intake-section" formGroupName="demographics">
+        <legend>Demographics</legend>
+        <label>
+          <span>First Name</span>
+          <input type="text" formControlName="firstName" />
+        </label>
 
-      <label>
-        <span>Last Name</span>
-        <input type="text" formControlName="lastName" />
-      </label>
+        <label>
+          <span>Last Name</span>
+          <input type="text" formControlName="lastName" />
+        </label>
 
-      <label>
-        <span>Date of Birth</span>
-        <input type="date" formControlName="dateOfBirth" />
-      </label>
+        <label>
+          <span>Date of Birth</span>
+          <input type="date" formControlName="dateOfBirth" />
+        </label>
+      </fieldset>
+
+      <fieldset class="intake-section" formGroupName="contact">
+        <legend>Contact Information</legend>
+        <label>
+          <span>Phone</span>
+          <input type="tel" formControlName="phoneNumber" />
+        </label>
+
+        <label>
+          <span>Email</span>
+          <input type="email" formControlName="email" />
+        </label>
+
+        <label>
+          <span>Address</span>
+          <input type="text" formControlName="addressLine1" />
+        </label>
+
+        <label>
+          <span>City</span>
+          <input type="text" formControlName="city" />
+        </label>
+
+        <label>
+          <span>State</span>
+          <input type="text" formControlName="state" />
+        </label>
+
+        <label>
+          <span>Postal Code</span>
+          <input type="text" formControlName="postalCode" />
+        </label>
+      </fieldset>
+
+      <fieldset class="intake-section" formGroupName="insurance">
+        <legend>Insurance Summary</legend>
+        <label>
+          <span>Payer Name</span>
+          <input type="text" formControlName="payerName" placeholder="Aetna, Blue Cross, Cigna" />
+        </label>
+
+        <label>
+          <span>Member ID</span>
+          <input type="text" formControlName="memberId" placeholder="Subscriber or member number" />
+        </label>
+
+        <label class="form-span">
+          <span>Insurance Summary</span>
+          <textarea rows="3" formControlName="insuranceSummary"></textarea>
+        </label>
+
+        <label>
+          <span>Eligibility Status</span>
+          <select formControlName="eligibilityStatus">
+            <option *ngFor="let status of eligibilityStatuses" [ngValue]="status">
+              {{ status | titlecase }}
+            </option>
+          </select>
+        </label>
+
+        <label>
+          <span>Last Verified</span>
+          <input type="datetime-local" formControlName="lastEligibilityVerifiedAt" />
+        </label>
+
+        <label class="form-span">
+          <span>Eligibility Notes</span>
+          <textarea rows="3" formControlName="eligibilityNotes"></textarea>
+        </label>
+      </fieldset>
+
+      <fieldset class="intake-section" formGroupName="intake">
+        <legend>Intake Status</legend>
+        <label>
+          <span>Intake Status</span>
+          <select formControlName="intakeStatus">
+            <option *ngFor="let status of intakeStatuses" [ngValue]="status">
+              {{ intakeStatusLabel(status) }}
+            </option>
+          </select>
+        </label>
+
+        <label class="form-span">
+          <span>Intake Notes</span>
+          <textarea rows="4" formControlName="intakeNotes"></textarea>
+        </label>
+      </fieldset>
 
       <button type="submit" class="primary-action" [disabled]="isSaving">
-        {{ isSaving ? "Saving..." : "Add Patient" }}
+        {{ isSaving ? "Saving..." : (isEditing ? "Update Patient" : "Add Patient") }}
+      </button>
+
+      <button *ngIf="isEditing" type="button" class="ghost-chip form-span align-start" (click)="clearForm()">
+        Cancel Editing
       </button>
     </form>
 
@@ -43,6 +137,13 @@
             <th>First Name</th>
             <th>Last Name</th>
             <th>Date of Birth</th>
+            <th>Payer</th>
+            <th>Member ID</th>
+            <th>Intake</th>
+            <th>Missing</th>
+            <th>Eligibility</th>
+            <th>Last Verified</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -50,9 +151,26 @@
             <td>{{ patient.firstName }}</td>
             <td>{{ patient.lastName }}</td>
             <td>{{ patient.dateOfBirth | date: "mediumDate" }}</td>
+            <td>{{ patient.payerName || "Not entered" }}</td>
+            <td>{{ patient.memberId || "Not entered" }}</td>
+            <td>
+              <span class="intake-badge" [ngClass]="'is-' + patient.intakeStatus">
+                {{ intakeStatusLabel(patient.intakeStatus) }}
+              </span>
+            </td>
+            <td>{{ patient.missingIntakeItems.length > 0 ? patient.missingIntakeItems.join(", ") : "Ready" }}</td>
+            <td>
+              <span class="eligibility-badge" [ngClass]="'is-' + patient.eligibilityStatus">
+                {{ patient.eligibilityStatus }}
+              </span>
+            </td>
+            <td>{{ patient.lastEligibilityVerifiedAt ? (patient.lastEligibilityVerifiedAt | date: "short") : "Pending" }}</td>
+            <td>
+              <button type="button" class="ghost-chip" (click)="editPatient(patient)">Edit</button>
+            </td>
           </tr>
           <tr *ngIf="patients.length === 0">
-            <td colspan="3" class="empty-state">No patients available.</td>
+            <td colspan="10" class="empty-state">No patients available.</td>
           </tr>
         </tbody>
       </table>

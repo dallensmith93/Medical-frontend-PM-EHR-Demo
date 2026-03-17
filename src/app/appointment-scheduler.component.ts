@@ -6,13 +6,23 @@ import { AppointmentService } from "./services/appointment.service";
 import { PatientService } from "./services/patient.service";
 import { ProviderService } from "./services/provider.service";
 import {
+  AppointmentChargeDto,
+  AppointmentPrerequisiteSummaryDto,
   AppointmentResponseDto,
+  BillingStatus,
+  CreateAppointmentChargeDto,
+  CreateAppointmentPrerequisiteDto,
+  EligibilityStatus,
+  IntakeStatus,
   PatientDto,
+  PrerequisiteKind,
+  PrerequisiteStatus,
   ProviderDto,
 } from "./types/scheduler-api.types";
 
 type CalendarView = "month" | "week" | "day";
 type SlotState = "open" | "occupied" | "selected";
+type DraftField = "dueDate" | "expiresOn" | "notes";
 
 interface CalendarDay {
   date: Date;
@@ -24,6 +34,21 @@ interface TimeSlot {
   label: string;
   hour: number;
   minute: number;
+}
+
+interface PrerequisiteDraft {
+  dueDate: string;
+  expiresOn: string;
+  notes: string;
+}
+
+interface ChargeDraft {
+  diagnosisCode: string;
+  procedureCode: string;
+  modifier: string;
+  units: number;
+  amount: number;
+  notes: string;
 }
 
 @Component({
@@ -45,6 +70,7 @@ export class AppointmentSchedulerComponent {
   });
 
   readonly weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  readonly prerequisiteKinds: PrerequisiteKind[] = ["authorization", "referral"];
   readonly timeSlots: TimeSlot[] = Array.from({ length: 20 }, (_, index) => {
     const totalMinutes = 8 * 60 + index * 30;
     const hour = Math.floor(totalMinutes / 60);
@@ -67,7 +93,13 @@ export class AppointmentSchedulerComponent {
   currentDate = this.startOfDay(new Date());
   errorMessage = "";
   isSaving = false;
+  eligibilityUpdatingId: number | null = null;
   selectedSlotKey = "";
+  prerequisiteSavingKey: string | null = null;
+  chargeSavingId: number | null = null;
+
+  private readonly prerequisiteDrafts: Record<string, PrerequisiteDraft> = {};
+  private readonly chargeDrafts: Record<number, ChargeDraft> = {};
 
   constructor() {
     this.loadData();
@@ -175,6 +207,22 @@ export class AppointmentSchedulerComponent {
     return this.filteredAppointments.length;
   }
 
+  get selectedPatientEligibilityLabel(): string {
+    const patientId = this.appointmentForm.controls.patientId.value;
+    if (patientId <= 0) {
+      return "Select a patient to review eligibility";
+    }
+
+    const patient = this.patients.find((item) => item.id === patientId);
+    if (!patient) {
+      return "Patient record unavailable";
+    }
+
+    const payerLabel = patient.payerName || "No payer on file";
+    const statusLabel = this.formatEligibilityLabel(patient.eligibilityStatus);
+    return `${statusLabel} • ${payerLabel}`;
+  }
+
   get openSlotCountThisWeek(): number {
     return this.weekDays.reduce((total, day) => {
       return (
@@ -194,6 +242,31 @@ export class AppointmentSchedulerComponent {
     }
 
     return `${this.patientName(next.patientId)} • ${this.formatTime(next.appointmentDate)}`;
+  }
+
+  get appointmentsRequiringReviewCount(): number {
+    return this.upcomingAppointments.filter((appointment) => {
+      return appointment.eligibilityStatus !== "verified";
+    }).length;
+  }
+
+  get appointmentsMissingIntakeCount(): number {
+    return this.upcomingAppointments.filter((appointment) => !appointment.isIntakeComplete).length;
+  }
+
+  get appointmentsWithPrerequisiteBlockersCount(): number {
+    return this.upcomingAppointments.filter((appointment) => appointment.hasPrerequisiteBlocker).length;
+  }
+
+  get appointmentsWithBillingReviewCount(): number {
+    return this.upcomingAppointments.filter((appointment) => appointment.billing.status !== "readyToSubmit").length;
+  }
+
+  get upcomingAppointments(): AppointmentResponseDto[] {
+    const now = Date.now();
+    return this.filteredAppointments
+      .filter((appointment) => this.parseAppointmentDate(appointment).getTime() >= now)
+      .slice(0, 6);
   }
 
   get weekDays(): CalendarDay[] {
@@ -285,6 +358,278 @@ export class AppointmentSchedulerComponent {
     });
   }
 
+  formatEligibilityLabel(status: EligibilityStatus): string {
+    return `${status.charAt(0).toUpperCase()}${status.slice(1)}`;
+  }
+
+  formatIntakeLabel(status: IntakeStatus): string {
+    return status === "notStarted"
+      ? "Not Started"
+      : status === "inProgress"
+        ? "In Progress"
+        : "Complete";
+  }
+
+  formatPrerequisiteLabel(status: PrerequisiteStatus): string {
+    switch (status) {
+      case "notRequired":
+        return "Not Required";
+      case "needed":
+        return "Needed";
+      case "submitted":
+        return "Submitted";
+      case "approved":
+        return "Approved";
+      case "denied":
+        return "Denied";
+      default:
+        return "Expired";
+    }
+  }
+
+  eligibilityBadgeClass(status: EligibilityStatus): string {
+    return `is-${status}`;
+  }
+
+  intakeBadgeClass(status: IntakeStatus): string {
+    return `is-${status}`;
+  }
+
+  prerequisiteBadgeClass(status: PrerequisiteStatus): string {
+    return `is-${status}`;
+  }
+
+  billingBadgeClass(status: BillingStatus): string {
+    return `is-${status}`;
+  }
+
+  shouldWarnForEligibility(appointment: AppointmentResponseDto): boolean {
+    return appointment.eligibilityStatus !== "verified";
+  }
+
+  eligibilityWarningText(appointment: AppointmentResponseDto): string {
+    if (appointment.eligibilityStatus === "failed") {
+      return "Coverage issue found. Follow up with patient or payer before the visit.";
+    }
+
+    return "Eligibility review is still pending before this appointment.";
+  }
+
+  shouldWarnForIntake(appointment: AppointmentResponseDto): boolean {
+    return !appointment.isIntakeComplete;
+  }
+
+  intakeSummary(appointment: AppointmentResponseDto): string {
+    return appointment.missingIntakeItems.length > 0
+      ? `Missing: ${appointment.missingIntakeItems.join(", ")}`
+      : "Intake complete";
+  }
+
+  getSummary(
+    appointment: AppointmentResponseDto,
+    kind: PrerequisiteKind,
+  ): AppointmentPrerequisiteSummaryDto {
+    return kind === "authorization" ? appointment.authorization : appointment.referral;
+  }
+
+  prerequisiteWarningText(appointment: AppointmentResponseDto): string {
+    const blockingKinds = (["authorization", "referral"] as const)
+      .filter((kind) => this.getSummary(appointment, kind).isBlocking)
+      .map((kind) => {
+        const label = kind === "authorization" ? "Authorization" : "Referral";
+        return `${label} ${this.formatPrerequisiteLabel(this.getSummary(appointment, kind).status).toLowerCase()}`;
+      });
+
+    return blockingKinds.length > 0
+      ? `${blockingKinds.join(" and ")} before this visit.`
+      : "No prerequisite blockers.";
+  }
+
+  prerequisiteDetailText(summary: AppointmentPrerequisiteSummaryDto): string {
+    const parts: string[] = [];
+
+    if (summary.dueDate) {
+      parts.push(`Due ${this.formatOptionalDate(summary.dueDate)}`);
+    }
+
+    if (summary.expiresOn) {
+      parts.push(`Expires ${this.formatOptionalDate(summary.expiresOn)}`);
+    }
+
+    if (summary.notes) {
+      parts.push(summary.notes);
+    }
+
+    return parts.length > 0 ? parts.join(" • ") : "No follow-up details yet.";
+  }
+
+  billingStatusLabel(status: BillingStatus): string {
+    switch (status) {
+      case "readyToSubmit":
+        return "Ready to Submit";
+      case "reviewNeeded":
+        return "Review Needed";
+      default:
+        return "Draft";
+    }
+  }
+
+  billingWarningSummary(appointment: AppointmentResponseDto): string {
+    if (appointment.billing.warningCount === 0) {
+      return "Charge is clean and ready to submit.";
+    }
+
+    return appointment.billing.warnings
+      .slice(0, 2)
+      .map((warning) => warning.message)
+      .join(" ");
+  }
+
+  updateDraft(
+    appointment: AppointmentResponseDto,
+    kind: PrerequisiteKind,
+    field: DraftField,
+    value: string,
+  ): void {
+    this.getDraft(appointment, kind)[field] = value;
+  }
+
+  draftValue(
+    appointment: AppointmentResponseDto,
+    kind: PrerequisiteKind,
+    field: DraftField,
+  ): string {
+    return this.getDraft(appointment, kind)[field];
+  }
+
+  chargeDraftValue(
+    appointment: AppointmentResponseDto,
+    field: keyof ChargeDraft,
+  ): string | number {
+    return this.getChargeDraft(appointment)[field];
+  }
+
+  updateChargeDraft(
+    appointment: AppointmentResponseDto,
+    field: keyof ChargeDraft,
+    value: string,
+  ): void {
+    const draft = this.getChargeDraft(appointment);
+
+    if (field === "units" || field === "amount") {
+      draft[field] = Number(value);
+      return;
+    }
+
+    draft[field] = value;
+  }
+
+  savePrerequisite(
+    appointment: AppointmentResponseDto,
+    kind: PrerequisiteKind,
+    status: Exclude<PrerequisiteStatus, "notRequired" | "expired">,
+  ): void {
+    this.errorMessage = "";
+    const summary = this.getSummary(appointment, kind);
+    const draft = this.getDraft(appointment, kind);
+    const savingKey = `${appointment.id}-${kind}`;
+    this.prerequisiteSavingKey = savingKey;
+
+    const payload: CreateAppointmentPrerequisiteDto = {
+      patientId: appointment.patientId,
+      kind,
+      status,
+      dueDate: draft.dueDate || null,
+      expiresOn: draft.expiresOn || null,
+      notes: draft.notes.trim(),
+    };
+
+    const request$ = summary.id
+      ? this.appointmentService.updateAppointmentPrerequisite(summary.id, {
+          status,
+          dueDate: payload.dueDate,
+          expiresOn: payload.expiresOn,
+          notes: payload.notes,
+        })
+      : this.appointmentService.createAppointmentPrerequisite(appointment.id, payload);
+
+    request$.subscribe({
+      next: () => {
+        this.loadData(() => {
+          this.prerequisiteSavingKey = null;
+        });
+      },
+      error: () => {
+        this.errorMessage = `Unable to update ${kind} details for this appointment.`;
+        this.prerequisiteSavingKey = null;
+      },
+    });
+  }
+
+  isSavingPrerequisite(appointmentId: number, kind: PrerequisiteKind): boolean {
+    return this.prerequisiteSavingKey === `${appointmentId}-${kind}`;
+  }
+
+  saveCharge(appointment: AppointmentResponseDto): void {
+    this.errorMessage = "";
+    this.chargeSavingId = appointment.id;
+    const draft = this.getChargeDraft(appointment);
+
+    const payload: CreateAppointmentChargeDto = {
+      diagnosisCode: draft.diagnosisCode.trim(),
+      procedureCode: draft.procedureCode.trim(),
+      modifier: draft.modifier.trim(),
+      units: Number.isFinite(draft.units) ? draft.units : 0,
+      amount: Number.isFinite(draft.amount) ? draft.amount : 0,
+      notes: draft.notes.trim(),
+    };
+
+    const request$ = appointment.billing.chargeId
+      ? this.appointmentService.updateAppointmentCharge(appointment.id, payload)
+      : this.appointmentService.createAppointmentCharge(appointment.id, payload);
+
+    request$.subscribe({
+      next: (charge) => {
+        this.chargeDrafts[appointment.id] = this.mapChargeToDraft(charge);
+        this.loadData(() => {
+          this.chargeSavingId = null;
+        });
+      },
+      error: () => {
+        this.errorMessage = "Unable to update charge details for this appointment.";
+        this.chargeSavingId = null;
+      },
+    });
+  }
+
+  isSavingCharge(appointmentId: number): boolean {
+    return this.chargeSavingId === appointmentId;
+  }
+
+  simulateEligibilityCheck(
+    appointment: AppointmentResponseDto,
+    eligibilityStatus: EligibilityStatus,
+  ): void {
+    this.errorMessage = "";
+    this.eligibilityUpdatingId = appointment.id;
+
+    this.appointmentService.updateEligibility(appointment.id, {
+      eligibilityStatus,
+      eligibilityNotes: this.defaultEligibilityNote(eligibilityStatus),
+      eligibilityReviewedAt: new Date().toISOString(),
+    }).subscribe({
+      next: () => {
+        this.loadData(() => {
+          this.eligibilityUpdatingId = null;
+        });
+      },
+      error: () => {
+        this.errorMessage = "Unable to update appointment eligibility.";
+        this.eligibilityUpdatingId = null;
+      },
+    });
+  }
+
   patientName(patientId: number): string {
     const patient = this.patients.find((item) => item.id === patientId);
     return patient ? `${patient.firstName} ${patient.lastName}` : `Patient #${patientId}`;
@@ -295,7 +640,7 @@ export class AppointmentSchedulerComponent {
     return provider?.name ?? `Provider #${providerId}`;
   }
 
-  private loadData(): void {
+  private loadData(onComplete?: () => void): void {
     forkJoin({
       patients: this.patientService.getPatients(),
       providers: this.providerService.getProviders(),
@@ -305,6 +650,11 @@ export class AppointmentSchedulerComponent {
         this.patients = patients;
         this.providers = providers;
         this.appointments = this.sortAppointments(appointments);
+        onComplete?.();
+      },
+      error: () => {
+        this.errorMessage = "Unable to load scheduler data.";
+        onComplete?.();
       },
     });
   }
@@ -320,6 +670,48 @@ export class AppointmentSchedulerComponent {
         onComplete?.();
       },
     });
+  }
+
+  private getDraft(
+    appointment: AppointmentResponseDto,
+    kind: PrerequisiteKind,
+  ): PrerequisiteDraft {
+    const key = `${appointment.id}-${kind}`;
+    const summary = this.getSummary(appointment, kind);
+
+    this.prerequisiteDrafts[key] ??= {
+      dueDate: summary.dueDate ?? "",
+      expiresOn: summary.expiresOn ?? "",
+      notes: summary.notes ?? "",
+    };
+
+    return this.prerequisiteDrafts[key];
+  }
+
+  private getChargeDraft(appointment: AppointmentResponseDto): ChargeDraft {
+    const existingDraft = this.chargeDrafts[appointment.id];
+    if (existingDraft) {
+      return existingDraft;
+    }
+
+    this.chargeDrafts[appointment.id] = {
+      diagnosisCode: "",
+      procedureCode: "",
+      modifier: "",
+      units: 1,
+      amount: 0,
+      notes: "",
+    };
+
+    if (appointment.billing.chargeId) {
+      this.appointmentService.getAppointmentCharge(appointment.id).subscribe({
+        next: (charge) => {
+          this.chargeDrafts[appointment.id] = this.mapChargeToDraft(charge);
+        },
+      });
+    }
+
+    return this.chargeDrafts[appointment.id];
   }
 
   private appointmentsForDay(date: Date): AppointmentResponseDto[] {
@@ -342,6 +734,17 @@ export class AppointmentSchedulerComponent {
     return [...appointments].sort((left, right) => {
       return this.parseAppointmentDate(left).getTime() - this.parseAppointmentDate(right).getTime();
     });
+  }
+
+  private mapChargeToDraft(charge: AppointmentChargeDto): ChargeDraft {
+    return {
+      diagnosisCode: charge.diagnosisCode ?? "",
+      procedureCode: charge.procedureCode ?? "",
+      modifier: charge.modifier ?? "",
+      units: charge.units || 0,
+      amount: charge.amount || 0,
+      notes: charge.notes ?? "",
+    };
   }
 
   private parseAppointmentDate(appointment: AppointmentResponseDto): Date {
@@ -371,7 +774,25 @@ export class AppointmentSchedulerComponent {
     });
   }
 
+  private formatOptionalDate(value: string): string {
+    return new Date(value).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    });
+  }
+
   private slotKey(date: Date, slot: TimeSlot): string {
     return `${this.startOfDay(date).toISOString()}-${slot.hour}-${slot.minute}`;
+  }
+
+  private defaultEligibilityNote(status: EligibilityStatus): string {
+    switch (status) {
+      case "verified":
+        return "Coverage verified for the scheduled visit.";
+      case "failed":
+        return "Coverage issue found. Follow up before check-in.";
+      default:
+        return "Eligibility review is still pending.";
+    }
   }
 }

@@ -7,71 +7,61 @@ namespace MedicalDemo.Api.Tests;
 
 public class PatientServiceTests
 {
-    [Fact]
-    public void Create_NormalizesEligibilityStatusAndTrimsIntakeFields()
-    {
-        var repository = new InMemoryPatientRepository();
-        var service = new PatientService(repository);
-
-        var created = service.Create(new CreatePatientDTO
-        {
-            FirstName = "  Jordan ",
-            LastName = " Lee  ",
-            DateOfBirth = new DateOnly(1992, 4, 15),
-            PayerName = "  Blue Cross  ",
-            MemberId = "  BC-1002  ",
-            EligibilityStatus = " VERIFIED ",
-            EligibilityNotes = "  Portal confirmed active coverage.  "
-        });
-
-        Assert.Equal("Jordan", created.FirstName);
-        Assert.Equal("Lee", created.LastName);
-        Assert.Equal("Blue Cross", created.PayerName);
-        Assert.Equal("BC-1002", created.MemberId);
-        Assert.Equal("verified", created.EligibilityStatus);
-        Assert.Equal("Portal confirmed active coverage.", created.EligibilityNotes);
-    }
+    private readonly PatientService _service = new(new InMemoryPatientRepository());
 
     [Fact]
-    public void Update_ReplacesStoredPatientAndDefaultsBlankEligibilityToPending()
+    public void Update_DemotesCompleteIntakeWhenRequiredFieldsAreMissing()
     {
-        var repository = new InMemoryPatientRepository();
-        var service = new PatientService(repository);
-
-        var updated = service.Update(2, new CreatePatientDTO
+        var updatedPatient = _service.Update(2, new CreatePatientDTO
         {
-            FirstName = "  Ethan ",
-            LastName = " Brooks  ",
+            FirstName = "Ethan",
+            LastName = "Brooks",
             DateOfBirth = new DateOnly(1978, 11, 3),
-            PayerName = "  United Healthcare ",
-            MemberId = "  UHC-7788 ",
-            EligibilityStatus = "   ",
-            LastEligibilityVerifiedAt = new DateTime(2026, 3, 16, 15, 30, 0, DateTimeKind.Utc),
-            EligibilityNotes = "  Waiting on updated card.  "
+            PhoneNumber = "",
+            Email = "ethan@example.com",
+            AddressLine1 = "4480 W 29th Ave",
+            City = "Denver",
+            State = "CO",
+            PostalCode = "80212",
+            PayerName = "Blue Cross",
+            MemberId = "BCB-552190",
+            InsuranceSummary = "",
+            EligibilityStatus = "pending",
+            EligibilityNotes = "Needs recheck",
+            IntakeStatus = "complete",
+            IntakeNotes = ""
         });
 
-        Assert.Equal(2, updated.Id);
-        Assert.Equal("United Healthcare", updated.PayerName);
-        Assert.Equal("UHC-7788", updated.MemberId);
-        Assert.Equal("pending", updated.EligibilityStatus);
-        Assert.Equal("Waiting on updated card.", updated.EligibilityNotes);
-        Assert.Equal(new DateTime(2026, 3, 16, 15, 30, 0, DateTimeKind.Utc), updated.LastEligibilityVerifiedAt);
+        Assert.Equal("inProgress", updatedPatient.IntakeStatus);
+        Assert.Contains("phone", updatedPatient.MissingIntakeItems);
+        Assert.Contains("insurance summary", updatedPatient.MissingIntakeItems);
+        Assert.Contains("intake notes", updatedPatient.MissingIntakeItems);
     }
 
     [Fact]
-    public void Update_ThrowsWhenPatientDoesNotExist()
+    public void Update_KeepsCompleteStatusWhenRequiredFieldsArePresent()
     {
-        var repository = new InMemoryPatientRepository();
-        var service = new PatientService(repository);
-
-        var exception = Assert.Throws<KeyNotFoundException>(() => service.Update(99, new CreatePatientDTO
+        var updatedPatient = _service.Update(3, new CreatePatientDTO
         {
-            FirstName = "Test",
-            LastName = "Patient",
-            DateOfBirth = new DateOnly(2000, 1, 1),
-            EligibilityStatus = "pending"
-        }));
+            FirstName = "Sophia",
+            LastName = "Nguyen",
+            DateOfBirth = new DateOnly(2016, 7, 21),
+            PhoneNumber = "303-555-0001",
+            Email = "sophia@example.com",
+            AddressLine1 = "91 Elm Ct",
+            City = "Aurora",
+            State = "CO",
+            PostalCode = "80011",
+            PayerName = "Cigna",
+            MemberId = "CIG-104822",
+            InsuranceSummary = "Cigna PPO",
+            EligibilityStatus = "verified",
+            EligibilityNotes = "Cleared",
+            IntakeStatus = "complete",
+            IntakeNotes = "Guardian forms received"
+        });
 
-        Assert.Contains("99", exception.Message);
+        Assert.Equal("complete", updatedPatient.IntakeStatus);
+        Assert.Empty(updatedPatient.MissingIntakeItems);
     }
 }

@@ -18,4 +18,8 @@ export class PatientService {
   createPatient(patient: CreatePatientDto): Observable<PatientDto> {
     return this.http.post<PatientDto>(this.patientsUrl, patient);
   }
+
+  updatePatient(id: number, patient: CreatePatientDto): Observable<PatientDto> {
+    return this.http.put<PatientDto>(`${this.patientsUrl}/${id}`, patient);
+  }
 }

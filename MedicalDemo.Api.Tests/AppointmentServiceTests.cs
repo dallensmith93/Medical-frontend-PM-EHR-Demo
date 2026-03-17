@@ -11,7 +11,9 @@ public class AppointmentServiceTests
     private readonly InMemoryAppointmentRepository _appointmentRepository = new();
     private readonly InMemoryPatientRepository _patientRepository = new();
     private readonly InMemoryAppointmentPrerequisiteRepository _prerequisiteRepository = new();
+    private readonly InMemoryAppointmentChargeRepository _chargeRepository = new();
     private readonly AppointmentPrerequisiteService _prerequisiteService;
+    private readonly AppointmentChargeService _chargeService;
     private readonly AppointmentService _service;
 
     public AppointmentServiceTests()
@@ -21,12 +23,20 @@ public class AppointmentServiceTests
             _appointmentRepository,
             _patientRepository,
             NullLogger<AppointmentPrerequisiteService>.Instance);
+        _chargeService = new AppointmentChargeService(
+            _chargeRepository,
+            _appointmentRepository,
+            _patientRepository,
+            new InMemoryProviderRepository(),
+            _prerequisiteService,
+            NullLogger<AppointmentChargeService>.Instance);
 
         _service = new AppointmentService(
             _appointmentRepository,
             _patientRepository,
             new InMemoryProviderRepository(),
             _prerequisiteService,
+            _chargeService,
             NullLogger<AppointmentService>.Instance);
     }
 
@@ -104,5 +114,27 @@ public class AppointmentServiceTests
         Assert.Equal("expired", appointment.Authorization.Status);
         Assert.True(appointment.Authorization.IsBlocking);
         Assert.True(appointment.HasPrerequisiteBlocker);
+    }
+
+    [Fact]
+    public void GetAll_ProjectsReadyToSubmitBillingSummaryForCleanAppointment()
+    {
+        var appointment = _service.GetAll().First(item => item.Id == 1);
+
+        Assert.Equal("readyToSubmit", appointment.Billing.Status);
+        Assert.True(appointment.Billing.IsReadyToSubmit);
+        Assert.Equal(0, appointment.Billing.WarningCount);
+    }
+
+    [Fact]
+    public void GetAll_ProjectsBillingWarningsForEligibilityAndPrerequisiteIssues()
+    {
+        var appointment = _service.GetAll().First(item => item.Id == 2);
+
+        Assert.Equal("reviewNeeded", appointment.Billing.Status);
+        Assert.False(appointment.Billing.IsReadyToSubmit);
+        Assert.Contains(appointment.Billing.Warnings, item => item.Code == "diagnosis");
+        Assert.Contains(appointment.Billing.Warnings, item => item.Code == "eligibility");
+        Assert.Contains(appointment.Billing.Warnings, item => item.Code == "authorization");
     }
 }

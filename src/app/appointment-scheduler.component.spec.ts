@@ -5,6 +5,7 @@ import { AppointmentService } from "./services/appointment.service";
 import { PatientService } from "./services/patient.service";
 import { ProviderService } from "./services/provider.service";
 import {
+  AppointmentChargeDto,
   AppointmentPrerequisiteDto,
   AppointmentResponseDto,
   PatientDto,
@@ -118,6 +119,13 @@ describe("AppointmentSchedulerComponent", () => {
         isBlocking: false,
       },
       hasPrerequisiteBlocker: false,
+      billing: {
+        chargeId: 301,
+        status: "readyToSubmit",
+        isReadyToSubmit: true,
+        warningCount: 0,
+        warnings: [],
+      },
     },
     {
       id: 102,
@@ -153,6 +161,16 @@ describe("AppointmentSchedulerComponent", () => {
         isBlocking: true,
       },
       hasPrerequisiteBlocker: true,
+      billing: {
+        chargeId: 302,
+        status: "reviewNeeded",
+        isReadyToSubmit: false,
+        warningCount: 4,
+        warnings: [
+          { code: "diagnosis", message: "Diagnosis code is missing.", isBlocking: true },
+          { code: "eligibility", message: "Eligibility is not verified for this visit.", isBlocking: true },
+        ],
+      },
     },
     {
       id: 103,
@@ -188,6 +206,15 @@ describe("AppointmentSchedulerComponent", () => {
         isBlocking: true,
       },
       hasPrerequisiteBlocker: true,
+      billing: {
+        chargeId: null,
+        status: "draft",
+        isReadyToSubmit: false,
+        warningCount: 5,
+        warnings: [
+          { code: "diagnosis", message: "Diagnosis code is missing.", isBlocking: true },
+        ],
+      },
     },
   ];
 
@@ -202,6 +229,29 @@ describe("AppointmentSchedulerComponent", () => {
     notes: "Submitted to payer.",
   };
 
+  const updatedCharge: AppointmentChargeDto = {
+    id: 302,
+    appointmentId: 102,
+    patientId: 2,
+    providerId: 1,
+    diagnosisCode: "I10",
+    procedureCode: "99214",
+    modifier: "25",
+    units: 1,
+    amount: 225,
+    notes: "Charge updated for billing review.",
+    billing: {
+      chargeId: 302,
+      status: "reviewNeeded",
+      isReadyToSubmit: false,
+      warningCount: 2,
+      warnings: [
+        { code: "eligibility", message: "Eligibility is not verified for this visit.", isBlocking: true },
+        { code: "authorization", message: "Authorization is needed.", isBlocking: true },
+      ],
+    },
+  };
+
   let appointmentService: jasmine.SpyObj<AppointmentService>;
   let patientService: jasmine.SpyObj<PatientService>;
   let providerService: jasmine.SpyObj<ProviderService>;
@@ -214,6 +264,9 @@ describe("AppointmentSchedulerComponent", () => {
       "getAppointmentPrerequisites",
       "createAppointmentPrerequisite",
       "updateAppointmentPrerequisite",
+      "getAppointmentCharge",
+      "createAppointmentCharge",
+      "updateAppointmentCharge",
     ]);
     patientService = jasmine.createSpyObj<PatientService>("PatientService", ["getPatients"]);
     providerService = jasmine.createSpyObj<ProviderService>("ProviderService", ["getProviders"]);
@@ -224,6 +277,9 @@ describe("AppointmentSchedulerComponent", () => {
     appointmentService.getAppointmentPrerequisites.and.returnValue(of([]));
     appointmentService.createAppointmentPrerequisite.and.returnValue(of(updatedPrerequisite));
     appointmentService.updateAppointmentPrerequisite.and.returnValue(of(updatedPrerequisite));
+    appointmentService.getAppointmentCharge.and.returnValue(of(updatedCharge));
+    appointmentService.createAppointmentCharge.and.returnValue(of(updatedCharge));
+    appointmentService.updateAppointmentCharge.and.returnValue(of(updatedCharge));
     patientService.getPatients.and.returnValue(of(patients));
     providerService.getProviders.and.returnValue(of(providers));
 
@@ -304,6 +360,29 @@ describe("AppointmentSchedulerComponent", () => {
       dueDate: null,
       expiresOn: null,
       notes: "",
+    });
+  });
+
+  it("updates charge details through the appointment service", () => {
+    const fixture = TestBed.createComponent(AppointmentSchedulerComponent);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    component.updateChargeDraft(appointments[1], "diagnosisCode", "I10");
+    component.updateChargeDraft(appointments[1], "procedureCode", "99214");
+    component.updateChargeDraft(appointments[1], "modifier", "25");
+    component.updateChargeDraft(appointments[1], "units", "1");
+    component.updateChargeDraft(appointments[1], "amount", "225");
+    component.updateChargeDraft(appointments[1], "notes", "Charge updated for billing review.");
+    component.saveCharge(appointments[1]);
+
+    expect(appointmentService.updateAppointmentCharge).toHaveBeenCalledWith(102, {
+      diagnosisCode: "I10",
+      procedureCode: "99214",
+      modifier: "25",
+      units: 1,
+      amount: 225,
+      notes: "Charge updated for billing review.",
     });
   });
 });

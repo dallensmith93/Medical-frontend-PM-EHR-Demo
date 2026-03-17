@@ -7,4 +7,6 @@ public interface IAppointmentService
     IReadOnlyCollection<AppointmentResponseDTO> GetAll();
 
     AppointmentResponseDTO Create(CreateAppointmentDTO request);
+
+    AppointmentResponseDTO UpdateEligibility(int id, UpdateAppointmentEligibilityDTO request);
 }

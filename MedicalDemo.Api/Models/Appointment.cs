@@ -13,4 +13,10 @@ public class Appointment
     public int DurationMinutes { get; set; }
 
     public string Reason { get; set; } = string.Empty;
+
+    public string EligibilityStatus { get; set; } = "pending";
+
+    public DateTime? EligibilityReviewedAt { get; set; }
+
+    public string EligibilityNotes { get; set; } = string.Empty;
 }

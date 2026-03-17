@@ -1,60 +1,52 @@
-using MedicalDemo.Api.Models;
+using MedicalDemo.Api.DTOs;
+using MedicalDemo.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MedicalDemo.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AppointmentsController(ILogger<AppointmentsController> logger) : ControllerBase
+public class AppointmentsController(IAppointmentService appointmentService) : ControllerBase
 {
-    private static readonly List<Appointment> Appointments = [];
-
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyCollection<Appointment>), StatusCodes.Status200OK)]
-    public ActionResult<IReadOnlyCollection<Appointment>> GetAppointments() =>
-        Ok(Appointments);
+    [ProducesResponseType(typeof(IReadOnlyCollection<AppointmentResponseDTO>), StatusCodes.Status200OK)]
+    public ActionResult<IReadOnlyCollection<AppointmentResponseDTO>> GetAppointments() =>
+        Ok(appointmentService.GetAll());
 
     [HttpPost]
-    [ProducesResponseType(typeof(Appointment), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(AppointmentResponseDTO), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public ActionResult<Appointment> CreateAppointment([FromBody] Appointment appointment)
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public ActionResult<AppointmentResponseDTO> CreateAppointment([FromBody] CreateAppointmentDTO request)
     {
-        var requestedStart = appointment.AppointmentDate;
-        var requestedEnd = appointment.AppointmentDate.AddMinutes(appointment.DurationMinutes);
-
-        var conflictExists = Appointments.Any(existingAppointment =>
+        try
         {
-            if (existingAppointment.ProviderId != appointment.ProviderId)
-            {
-                return false;
-            }
-
-            var existingAppointmentStart = existingAppointment.AppointmentDate;
-            var existingAppointmentEnd = existingAppointment.AppointmentDate.AddMinutes(existingAppointment.DurationMinutes);
-
-            return requestedStart < existingAppointmentEnd && existingAppointmentStart < requestedEnd;
-        });
-
-        if (conflictExists)
-        {
-            logger.LogWarning(
-                "Scheduling conflict detected for provider {ProviderId}",
-                appointment.ProviderId);
-            return Conflict(new { message = "Provider already has an appointment scheduled during this time." });
+            var appointment = appointmentService.Create(request);
+            return CreatedAtAction(nameof(GetAppointments), new { id = appointment.Id }, appointment);
         }
-
-        if (appointment.Id == 0)
+        catch (SchedulingConflictException exception)
         {
-            appointment.Id = Appointments.Count == 0 ? 1 : Appointments.Max(existing => existing.Id) + 1;
+            return Conflict(new { message = exception.Message });
         }
+        catch (KeyNotFoundException exception)
+        {
+            return NotFound(new { message = exception.Message });
+        }
+    }
 
-        Appointments.Add(appointment);
-        logger.LogInformation(
-            "Appointment created for provider {ProviderId} at {AppointmentDate}",
-            appointment.ProviderId,
-            appointment.AppointmentDate);
-
-        return CreatedAtAction(nameof(GetAppointments), new { id = appointment.Id }, appointment);
+    [HttpPut("{id:int}/eligibility")]
+    [ProducesResponseType(typeof(AppointmentResponseDTO), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public ActionResult<AppointmentResponseDTO> UpdateEligibility(int id, [FromBody] UpdateAppointmentEligibilityDTO request)
+    {
+        try
+        {
+            return Ok(appointmentService.UpdateEligibility(id, request));
+        }
+        catch (KeyNotFoundException exception)
+        {
+            return NotFound(new { message = exception.Message });
+        }
     }
 }

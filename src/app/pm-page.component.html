@@ -128,17 +128,25 @@
         </div>
         <button type="button" class="primary-action">Generate Batch</button>
       </div>
+      <p class="error-banner" *ngIf="claimErrorMessage">{{ claimErrorMessage }}</p>
       <div class="claim-list">
-        <article class="list-card" *ngFor="let claim of claimQueue">
+        <button
+          type="button"
+          class="list-card patient-row"
+          *ngFor="let claim of claimQueue"
+          [class.is-selected]="activeClaim?.appointmentId === claim.appointmentId"
+          (click)="selectClaim(claim)"
+        >
           <div>
-            <strong>{{ claim.claim }}</strong>
-            <p>{{ claim.patient }} | {{ claim.payer }}</p>
+            <strong>{{ claim.patientName }}</strong>
+            <p>{{ claim.payerName }} | {{ claim.providerName }}</p>
+            <p>{{ claim.reason }} | {{ claim.appointmentDate | date: "EEE, MMM d • h:mm a" }}</p>
           </div>
           <div class="list-card-meta">
-            <strong>{{ claim.amount }}</strong>
-            <span class="status-badge">{{ claim.status }}</span>
+            <strong>{{ claim.warningCount }} warning{{ claim.warningCount === 1 ? "" : "s" }}</strong>
+            <span class="status-badge">{{ billingStatusLabel(claim.status) }}</span>
           </div>
-        </article>
+        </button>
       </div>
     </section>
 
@@ -146,15 +154,104 @@
       <div class="panel-header">
         <div>
           <p class="section-kicker">Claim Actions</p>
-          <h3>Submission workflow</h3>
+          <h3>{{ activeClaim ? activeClaim.patientName : "Submission workflow" }}</h3>
         </div>
       </div>
-      <div class="action-stack">
-        <button type="button" class="primary-action">Create Primary Claim</button>
-        <button type="button" class="ghost-action">Scrub Coding Issues</button>
-        <button type="button" class="ghost-action">Attach Documentation</button>
-        <button type="button" class="ghost-action">Submit to Clearinghouse</button>
-      </div>
+      <ng-container *ngIf="activeClaim && activeCharge; else noClaimSelected">
+        <div class="detail-grid">
+          <div class="stat-card">
+            <span>Status</span>
+            <strong>{{ billingStatusLabel(activeClaim.status) }}</strong>
+          </div>
+          <div class="stat-card">
+            <span>Payer</span>
+            <strong>{{ activeClaim.payerName }}</strong>
+          </div>
+          <div class="stat-card">
+            <span>Provider</span>
+            <strong>{{ activeClaim.providerName }}</strong>
+          </div>
+          <div class="stat-card">
+            <span>Warnings</span>
+            <strong>{{ activeClaim.warningCount }}</strong>
+          </div>
+        </div>
+
+        <div class="list-grid">
+          <article class="list-card" *ngFor="let warning of activeClaim.warnings">
+            <strong>{{ warning.code | titlecase }}</strong>
+            <p>{{ warning.message }}</p>
+          </article>
+        </div>
+
+        <div class="prerequisite-fields">
+          <label>
+            <span>Diagnosis</span>
+            <input
+              type="text"
+              [value]="activeCharge.diagnosisCode"
+              (input)="updateChargeField('diagnosisCode', $any($event.target).value)"
+            />
+          </label>
+          <label>
+            <span>Procedure</span>
+            <input
+              type="text"
+              [value]="activeCharge.procedureCode"
+              (input)="updateChargeField('procedureCode', $any($event.target).value)"
+            />
+          </label>
+          <label>
+            <span>Modifier</span>
+            <input
+              type="text"
+              [value]="activeCharge.modifier"
+              (input)="updateChargeField('modifier', $any($event.target).value)"
+            />
+          </label>
+          <label>
+            <span>Units</span>
+            <input
+              type="number"
+              min="0"
+              [value]="activeCharge.units"
+              (input)="updateChargeField('units', $any($event.target).value)"
+            />
+          </label>
+          <label>
+            <span>Amount</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              [value]="activeCharge.amount"
+              (input)="updateChargeField('amount', $any($event.target).value)"
+            />
+          </label>
+          <label class="form-span">
+            <span>Charge Notes</span>
+            <textarea
+              rows="3"
+              [value]="activeCharge.notes"
+              (input)="updateChargeField('notes', $any($event.target).value)"
+            ></textarea>
+          </label>
+        </div>
+
+        <div class="action-stack">
+          <button type="button" class="primary-action" [disabled]="claimSaving" (click)="saveActiveCharge()">
+            Save Charge
+          </button>
+          <button type="button" class="ghost-action">Scrub Coding Issues</button>
+          <button type="button" class="ghost-action">Attach Documentation</button>
+          <button type="button" class="ghost-action" [disabled]="activeClaim.status !== 'readyToSubmit'">
+            Submit to Clearinghouse
+          </button>
+        </div>
+      </ng-container>
+      <ng-template #noClaimSelected>
+        <div class="empty-day large">No claim is selected for review.</div>
+      </ng-template>
     </section>
   </div>
 
