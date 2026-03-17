@@ -22,10 +22,10 @@
 
 ### Prior Authorization and Referral Tracking
 
-- [ ] **AUTH-01**: Staff can create an authorization or referral record linked to a patient and appointment.
-- [ ] **AUTH-02**: Each authorization/referral record tracks status such as needed, submitted, approved, denied, or expired.
-- [ ] **AUTH-03**: The system shows missing or unresolved authorizations on the scheduling workflow.
-- [ ] **AUTH-04**: Staff can record due dates and notes for authorization follow-up.
+- [x] **AUTH-01**: Staff can create an authorization or referral record linked to a patient and appointment.
+- [x] **AUTH-02**: Each authorization/referral record tracks status such as needed, submitted, approved, denied, or expired.
+- [x] **AUTH-03**: The system shows missing or unresolved authorizations on the scheduling workflow.
+- [x] **AUTH-04**: Staff can record due dates and notes for authorization follow-up.
 
 ### Charge Capture and Claim Scrubbing
 
@@ -122,10 +122,10 @@
 | INTAKE-02 | Phase 3 | Complete |
 | INTAKE-03 | Phase 3 | Complete |
 | INTAKE-04 | Phase 3 | Complete |
-| AUTH-01 | Phase 4 | Pending |
-| AUTH-02 | Phase 4 | Pending |
-| AUTH-03 | Phase 4 | Pending |
-| AUTH-04 | Phase 4 | Pending |
+| AUTH-01 | Phase 4 | Complete |
+| AUTH-02 | Phase 4 | Complete |
+| AUTH-03 | Phase 4 | Complete |
+| AUTH-04 | Phase 4 | Complete |
 | CLAIM-01 | Phase 5 | Pending |
 | CLAIM-02 | Phase 5 | Pending |
 | CLAIM-03 | Phase 5 | Pending |

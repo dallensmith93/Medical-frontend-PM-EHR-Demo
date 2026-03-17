@@ -71,12 +71,13 @@ Plans:
   2. Each appointment shows whether authorization or referral is required and its current status.
   3. Expired, missing, or pending items are highlighted before the visit.
   4. Staff can move items through statuses such as needed, submitted, approved, or denied.
-**Plans**: 3 plans
+**Plans**: 4 plans
 
 Plans:
-- [ ] 04-00: Add Wave 0 backend and scheduler regression coverage for auth/referral workflows
-- [ ] 04-01: Add referral and authorization backend models, status rules, appointment summaries, and linked endpoints
-- [ ] 04-02: Add scheduling-side auth and referral views, alerts, follow-up details, and update actions
+- [x] 04-00: Add Wave 0 backend and scheduler regression coverage for auth/referral workflows
+- [ ] 04-01: Add referral and authorization backend aggregate, DTOs, repository, and core service rules
+- [ ] 04-02: Add appointment summary projection and linked prerequisite endpoints
+- [ ] 04-03: Add scheduling-side auth and referral views, alerts, follow-up details, and update actions
 
 ### Phase 5: Claim Scrubbing and Charge Readiness
 **Goal**: Add pre-billing checks that catch obvious claim issues before submission.
@@ -134,7 +135,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 1. Smart Scheduling Foundation | 0/2 | Not started | - |
 | 2. Eligibility Verification Workflow | 0/2 | Not started | - |
 | 3. Patient Intake and Digital Forms | 0/2 | Not started | - |
-| 4. Prior Auth and Referral Tracking | 0/2 | Not started | - |
+| 4. Prior Auth and Referral Tracking | 1/4 | In Progress | 2026-03-16 |
 | 5. Claim Scrubbing and Charge Readiness | 0/2 | Not started | - |
 | 6. Inbox and Task Routing Automation | 0/3 | Not started | - |
 | 7. Follow-Up and Recall Automation | 0/2 | Not started | - |
